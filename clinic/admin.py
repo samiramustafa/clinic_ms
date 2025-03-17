@@ -7,3 +7,4 @@ admin.site.register(Doctor)
 admin.site.register(Feedback)
 admin.site.register(Appointment)
 admin.site.register(AvailableTime)
+
