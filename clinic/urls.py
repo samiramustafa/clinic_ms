@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from django.urls import include, path
 
 # from.views import UserDetailView, UserListCreateView
@@ -17,4 +18,13 @@ urlpatterns = [
     path("feedbacks/", FeedbackListCreateView.as_view(), name="feedback-list-create"),
     path("feedbacks/<int:pk>/", FeedbackDetailView.as_view(), name="feedback-detail"),
     
+=======
+from django.urls import path
+from .views import *
+
+from clinic import views
+
+urlpatterns = [
+    path('all', views.index, name='index'),
+>>>>>>> main
 ]
