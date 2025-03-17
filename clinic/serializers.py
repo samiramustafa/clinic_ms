@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, AvailableTime
+from .models import Appointment, Feedback, User, AvailableTime
 from django.contrib.auth.hashers import make_password
 
 class UserSerializer(serializers.ModelSerializer):
@@ -53,3 +53,67 @@ class AvailableTimeSerializer(serializers.ModelSerializer):
 
 
 
+
+
+
+
+
+
+# class AppointmentSerializer(serializers.ModelSerializer):
+#     date = serializers.SerializerMethodField()
+#     time_range = serializers.SerializerMethodField()
+
+#     class Meta:
+#         model = Appointment
+#         fields = ('id', 'patient', 'doctor', 'available_time','date', 'time_range', 'status')
+
+#     def get_date(self, obj):
+#         return obj.available_time.date if obj.available_time else None
+
+#     def get_time_range(self, obj):
+#         if obj.available_time:
+#             return f"{obj.available_time.start_time} - {obj.available_time.end_time}"
+#         return None
+
+#     def validate(self, data):
+#         doctor = data.get("doctor")
+#         available_time = data.get("available_time")
+
+#         if available_time and doctor:
+#             if available_time.doctor != doctor:
+#                 raise serializers.ValidationError("The selected available time does not belong to the chosen doctor.")
+
+#         return data
+
+
+class AppointmentSerializer(serializers.ModelSerializer):
+    date = serializers.DateField(source="available_time.date", read_only=True)
+    time_range = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Appointment
+        fields = ("id", "patient", "doctor", "available_time", "date", "time_range", "status")
+
+    def get_time_range(self, obj):
+        return f"{obj.available_time.start_time} - {obj.available_time.end_time}" if obj.available_time else None
+
+    def validate(self, data):
+ 
+        available_time = data.get("available_time")
+        doctor = data.get("doctor")
+
+        if available_time and doctor and available_time.doctor != doctor:
+            raise serializers.ValidationError(
+                {"available_time": "The selected available time does not belong to the chosen doctor."}
+            )
+
+        return data
+    
+
+
+# ===feedbacks================
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    class Meta :
+        model = Feedback
+        fields = "__all__"

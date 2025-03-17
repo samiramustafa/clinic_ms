@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.validators import RegexValidator
 from datetime import date, timedelta
-
+from django.db.models import Avg
 
 from django.utils.translation import gettext_lazy as _  
 
@@ -122,6 +122,7 @@ class Doctor(models.Model):
     specialization = models.CharField(max_length=100)
     description = models.TextField(null=True, blank=True)
     fees = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.01)])
+    average_rating = models.FloatField(default=0.0)
 
     def clean(self):
         super().clean()
@@ -132,8 +133,28 @@ class Doctor(models.Model):
         if self.description and len(self.description.strip()) < 10:
             raise ValidationError("Description must be at least 10 characters ")
 
+    def update_rating(self):
+      
+        feedbacks = self.feedbacks.all()
+        new_average = round(sum(f.rate for f in feedbacks) / feedbacks.count(), 1) if feedbacks.exists() else 0.0
+
+        if self.average_rating != new_average:  
+            self.average_rating = new_average
+            self.save()
+
     def __str__(self):
         return f"Dr. {self.user.name} - {self.specialization}"
+    
+
+    # class DoctorSerializer(serializers.ModelSerializer):
+    # average_rating = serializers.SerializerMethodField()
+
+    # class Meta:
+    #     model = Doctor
+    #     fields = ["id", "user", "specialization", "average_rating"]
+
+    # def get_average_rating(self, obj):
+    #     return obj.average_rating()
 
 
 class Feedback(models.Model):
@@ -143,37 +164,36 @@ class Feedback(models.Model):
     rate = models.PositiveSmallIntegerField( validators=[MinValueValidator(1), MaxValueValidator(5)])
     created_at = models.DateTimeField(auto_now_add=True)
 
+   
+
+    def save(self, *args, **kwargs):
+        
+        super().save(*args, **kwargs)
+        self.doctor.update_rating()  
+
+    
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        self.doctor.update_rating() 
+    
     def __str__(self):
-        return f"Feedback from {self.patient.user.name} to {self.doctor.user.name}"
-
-class Appointment(models.Model):
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="appointments")
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name="appointments")
-    start_time = models.TimeField()
-    end_time = models.TimeField()
-    date = models.DateField()
-    status = models.CharField(max_length=10, choices=StatusChoices.choices, default="pending")
+        return f"Feedback from {self.patient.user.name} to Dr. {self.doctor.user.name} - {self.rate} ⭐"
 
 
-    def clean(self):
-        validate_time_order(self.start_time, self.end_time)
+# class Appointment(models.Model):
+#     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="appointments")
+#     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name="appointments")
+#     start_time = models.TimeField()
+#     end_time = models.TimeField()
+#     date = models.DateField()
+#     status = models.CharField(max_length=10, choices=StatusChoices.choices, default="pending")
 
-    def __str__(self):
-        return f"{self.patient.user.name} - {self.doctor.user.name} ({self.date})"
 
-from django.db import models
-from django.core.exceptions import ValidationError
-from django.utils.translation import gettext_lazy as _
+#     def clean(self):
+#         validate_time_order(self.start_time, self.end_time)
 
-from datetime import date, timedelta
-from django.core.exceptions import ValidationError
-from django.db import models
-from django.utils.translation import gettext_lazy as _
-
-from datetime import date, timedelta
-from django.core.exceptions import ValidationError
-from django.db import models
-from django.utils.translation import gettext_lazy as _
+#     def __str__(self):
+#         return f"{self.patient.user.name} - {self.doctor.user.name} ({self.date})"
 
 class AvailableTime(models.Model):
     doctor = models.ForeignKey(
@@ -218,4 +238,26 @@ class AvailableTime(models.Model):
 
     def __str__(self):
         return f"{self.doctor.user.name} - {self.day or self.date} ({self.start_time} - {self.end_time})"
+
+
+
+class Appointment(models.Model):
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="appointments")
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name="appointments")
+    available_time = models.ForeignKey(AvailableTime, on_delete=models.CASCADE, related_name="appointments")
+    status = models.CharField(max_length=10, choices=StatusChoices.choices, default="pending")
+
+    
+       
+        
+        
+   
+
+    def __str__(self):
+        return f"{self.patient.user.name} - {self.available_time.doctor.user.name} ({self.available_time.date} {self.available_time.start_time} - {self.available_time.end_time})"
+
+
+
+
+
 
