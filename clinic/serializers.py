@@ -1,53 +1,48 @@
 from rest_framework import serializers
-<<<<<<< HEAD
-from .models import Appointment, Feedback, User, AvailableTime
+from .models import Appointment, Feedback, User, AvailableTime, Patient, Doctor
 from django.contrib.auth.hashers import make_password
-=======
-from .models import User, Patient, Doctor
->>>>>>> main
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-<<<<<<< HEAD
-        fields = [
-            "id", "national_id", "name", "email", "mobile_phone",
-            "profile_picture", "gender", "birth_date", "role", "password","date_joined", "last_login"
-        ]  
+# class UserSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = User
+#         fields = [
+#             "id", "national_id", "name", "email", "mobile_phone",
+#             "profile_picture", "gender", "birth_date", "role", "password","date_joined", "last_login"
+#         ]  
 
-        extra_kwargs = {
-            "password": {"write_only": True}  
-        }
+#         extra_kwargs = {
+#             "password": {"write_only": True}  
+#         }
 
-    def create(self, validated_data):
+#     def create(self, validated_data):
     
-        password = validated_data.pop('password', None)
-        user = super().create(validated_data)
-        if password:
-            user.password = make_password(password)
-            user.save()
-        return user
+#         password = validated_data.pop('password', None)
+#         user = super().create(validated_data)
+#         if password:
+#             user.password = make_password(password)
+#             user.save()
+#         return user
 
-    def update(self, instance, validated_data):
+#     def update(self, instance, validated_data):
        
-        password = validated_data.pop('password', None)
+#         password = validated_data.pop('password', None)
         
         
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+#         for attr, value in validated_data.items():
+#             setattr(instance, attr, value)
             
       
-        if password is not None:
-            instance.password = make_password(password)
+#         if password is not None:
+#             instance.password = make_password(password)
             
-        instance.save()
-        return instance
+#         instance.save()
+#         return instance
 
 
 
 
 
-# avaliable in the clinic_ms/clinic/serializers.py file
+
 
 
 class AvailableTimeSerializer(serializers.ModelSerializer):
@@ -60,35 +55,6 @@ class AvailableTimeSerializer(serializers.ModelSerializer):
 
 
 
-
-
-
-
-# class AppointmentSerializer(serializers.ModelSerializer):
-#     date = serializers.SerializerMethodField()
-#     time_range = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = Appointment
-#         fields = ('id', 'patient', 'doctor', 'available_time','date', 'time_range', 'status')
-
-#     def get_date(self, obj):
-#         return obj.available_time.date if obj.available_time else None
-
-#     def get_time_range(self, obj):
-#         if obj.available_time:
-#             return f"{obj.available_time.start_time} - {obj.available_time.end_time}"
-#         return None
-
-#     def validate(self, data):
-#         doctor = data.get("doctor")
-#         available_time = data.get("available_time")
-
-#         if available_time and doctor:
-#             if available_time.doctor != doctor:
-#                 raise serializers.ValidationError("The selected available time does not belong to the chosen doctor.")
-
-#         return data
 
 
 class AppointmentSerializer(serializers.ModelSerializer):
@@ -121,8 +87,13 @@ class AppointmentSerializer(serializers.ModelSerializer):
 class FeedbackSerializer(serializers.ModelSerializer):
     class Meta :
         model = Feedback
-        fields = "__all__"
-=======
+     
+        fields = '__all__'
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
         fields = '__all__'
 
 class PatientSerializer(serializers.ModelSerializer):
@@ -138,4 +109,3 @@ class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
         fields = '__all__'
->>>>>>> main

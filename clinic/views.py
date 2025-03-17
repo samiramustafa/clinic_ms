@@ -1,10 +1,9 @@
-<<<<<<< HEAD
 from django.shortcuts import get_object_or_404, render
 from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework import viewsets
-from .models import Appointment, AvailableTime, Feedback, User
-from .serializers import AppointmentSerializer, AvailableTimeSerializer, FeedbackSerializer, UserSerializer
+from .models import Appointment, AvailableTime, Feedback, User, Patient, Doctor
+from .serializers import AppointmentSerializer, AvailableTimeSerializer, FeedbackSerializer, UserSerializer, PatientSerializer, DoctorSerializer
 from rest_framework.response import Response
 from rest_framework import status, permissions
 
@@ -19,38 +18,47 @@ from rest_framework import status, permissions
 
 
 
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
-class UserListCreateAPIView(APIView):
-    def get(self, request):
-        all_users = User.objects.all()
-        serializer = UserSerializer(all_users, many=True)  
-        return Response(serializer.data)
+class PatientViewSet(viewsets.ModelViewSet):
+    queryset = Patient.objects.all()
+    serializer_class = PatientSerializer
 
-    def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class UserDetailAPIView(APIView):
-    def get(self, request, pk):
-        user = get_object_or_404(User, pk=pk)
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
 
-    def put(self, request, pk):
-        user = get_object_or_404(User, pk=pk)
-        serializer = UserSerializer(user, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# class UserListCreateAPIView(APIView):
+#     def get(self, request):
+#         all_users = User.objects.all()
+#         serializer = UserSerializer(all_users, many=True)  
+#         return Response(serializer.data)
 
-    def delete(self, request, pk):
-        user = get_object_or_404(User, pk=pk)
-        user.delete()
-        return Response({"message": "User deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+#     def post(self, request):
+#         serializer = UserSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# class UserDetailAPIView(APIView):
+#     def get(self, request, pk):
+#         user = get_object_or_404(User, pk=pk)
+#         serializer = UserSerializer(user)
+#         return Response(serializer.data)
+
+#     def put(self, request, pk):
+#         user = get_object_or_404(User, pk=pk)
+#         serializer = UserSerializer(user, data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def delete(self, request, pk):
+#         user = get_object_or_404(User, pk=pk)
+#         user.delete()
+#         return Response({"message": "User deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
 
 
@@ -210,20 +218,8 @@ class FeedbackDetailView(APIView):
         feedback.delete()
         doctor.update_rating()
         return Response({"message": "Feedback deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-=======
-from rest_framework import viewsets
-from .models import User, Patient, Doctor
-from .serializers import UserSerializer, PatientSerializer, DoctorSerializer
 
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-
-class PatientViewSet(viewsets.ModelViewSet):
-    queryset = Patient.objects.all()
-    serializer_class = PatientSerializer
 
 class DoctorViewSet(viewsets.ModelViewSet):
     queryset = Doctor.objects.all()
     serializer_class = DoctorSerializer
->>>>>>> main
