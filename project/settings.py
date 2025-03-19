@@ -39,11 +39,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'clinic',
+    # for react
     'corsheaders',
     
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', #for react
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -54,8 +56,15 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 ]
 
+# for react
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  
+]
+CORS_ALLOW_ALL_ORIGINS = True #   react
+
+
 ROOT_URLCONF = 'project.urls'
-CORS_ALLOW_ALL_ORIGINS = True
+
 
 
 TEMPLATES = [
