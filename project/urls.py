@@ -1,12 +1,7 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from clinic.views import UserViewSet, PatientViewSet, DoctorViewSet
-
-router = DefaultRouter()
-router.register(r'users', UserViewSet)
-router.register(r'patients', PatientViewSet)
-router.register(r'doctors', DoctorViewSet)
+from django.contrib import admin
+from django.urls import include, path
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('admin/', admin.site.urls),
+    path('', include('clinic.urls')),  # تأكد من أن هذا السطر موجود
 ]
