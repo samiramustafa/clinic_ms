@@ -2,6 +2,31 @@ from rest_framework import serializers
 from .models import Appointment, Feedback, User, AvailableTime, Patient, Doctor
 from django.contrib.auth.hashers import make_password
 
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "national_id",
+            "name",
+            "email",
+            "username",
+            "mobile_phone",
+            "gender",
+            "birth_date",
+            "role",
+            "password",
+        ] 
+
+class DoctorSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+
+    class Meta:
+        model = Doctor
+        fields = '__all__'
+        read_only_fields = ['user']
+
+
 # class UserSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = User
@@ -91,10 +116,6 @@ class FeedbackSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = '__all__'
 
 class PatientSerializer(serializers.ModelSerializer):
     user = UserSerializer()
@@ -103,9 +124,3 @@ class PatientSerializer(serializers.ModelSerializer):
         model = Patient
         fields = '__all__'
 
-class DoctorSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-
-    class Meta:
-        model = Doctor
-        fields = '__all__'
