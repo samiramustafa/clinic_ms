@@ -94,6 +94,8 @@ class User(AbstractUser):
         super().clean()
         if self.birth_date and self.birth_date > timezone.now().date():
             raise ValidationError("Birth date cannot be in the future.")
+        
+    
 
     def __str__(self):
         return self.name
@@ -120,8 +122,9 @@ class Patient(models.Model):
 class Doctor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="doctor_profile")
     specialization = models.CharField(max_length=100)
+    clinicAddress=models.TextField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    fees = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.01)])
+    fees = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.01)] ,blank=True, null=True)
     average_rating = models.FloatField(default=0.0)
 
     def clean(self):
@@ -246,12 +249,8 @@ class Appointment(models.Model):
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name="appointments")
     available_time = models.ForeignKey(AvailableTime, on_delete=models.CASCADE, related_name="appointments")
     status = models.CharField(max_length=10, choices=StatusChoices.choices, default="pending")
-
     
-       
-        
-        
-   
+
 
     def __str__(self):
         return f"{self.patient.user.name} - {self.available_time.doctor.user.name} ({self.available_time.date} {self.available_time.start_time} - {self.available_time.end_time})"
