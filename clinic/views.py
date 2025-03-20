@@ -26,6 +26,9 @@ class PatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
     serializer_class = PatientSerializer
 
+class DoctorViewSet(viewsets.ModelViewSet):
+    queryset = Doctor.objects.all()
+    serializer_class = DoctorSerializer
 
 
 # class UserListCreateAPIView(APIView):
@@ -220,6 +223,3 @@ class FeedbackDetailView(APIView):
         return Response({"message": "Feedback deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
 
-class DoctorViewSet(viewsets.ModelViewSet):
-    queryset = Doctor.objects.all()
-    serializer_class = DoctorSerializer
