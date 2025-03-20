@@ -85,10 +85,11 @@ class AppointmentSerializer(serializers.ModelSerializer):
 # ===feedbacks================
 
 class FeedbackSerializer(serializers.ModelSerializer):
-    class Meta :
+    patient_name = serializers.CharField(source="patient.user.name", read_only=True)
+
+    class Meta:
         model = Feedback
-     
-        fields = '__all__'
+        fields = ["id", "patient","patient_name", "doctor", "feedback", "rate", "created_at"]
 
 
 class UserSerializer(serializers.ModelSerializer):
