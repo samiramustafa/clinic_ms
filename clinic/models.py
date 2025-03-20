@@ -56,8 +56,9 @@ def validate_time_order(start_time, end_time):
         return
     if start_time >= end_time:
         raise ValidationError("Start time must be before end time.")
+    
 
-#  main user  ##
+# ======================  MODELS  ========================
 
 class User(AbstractUser):
     national_id = models.CharField(
@@ -254,9 +255,3 @@ class Appointment(models.Model):
 
     def __str__(self):
         return f"{self.patient.user.name} - {self.available_time.doctor.user.name} ({self.available_time.date} {self.available_time.start_time} - {self.available_time.end_time})"
-
-
-
-
-
-
