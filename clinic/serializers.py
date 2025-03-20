@@ -17,7 +17,7 @@ class UserSerializer(serializers.ModelSerializer):
             "role",
             "password",
         ] 
-        
+
 
 class DoctorSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
@@ -75,6 +75,7 @@ class FeedbackSerializer(serializers.ModelSerializer):
         model = Feedback
      
         fields = '__all__'
+
 
 
 
