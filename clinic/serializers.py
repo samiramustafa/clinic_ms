@@ -2,46 +2,37 @@ from rest_framework import serializers
 from .models import Appointment, Feedback, User, AvailableTime, Patient, Doctor
 from django.contrib.auth.hashers import make_password
 
-# class UserSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = User
-#         fields = [
-#             "id", "national_id", "name", "email", "mobile_phone",
-#             "profile_picture", "gender", "birth_date", "role", "password","date_joined", "last_login"
-#         ]  
-
-#         extra_kwargs = {
-#             "password": {"write_only": True}  
-#         }
-
-#     def create(self, validated_data):
-    
-#         password = validated_data.pop('password', None)
-#         user = super().create(validated_data)
-#         if password:
-#             user.password = make_password(password)
-#             user.save()
-#         return user
-
-#     def update(self, instance, validated_data):
-       
-#         password = validated_data.pop('password', None)
-        
-        
-#         for attr, value in validated_data.items():
-#             setattr(instance, attr, value)
-            
-      
-#         if password is not None:
-#             instance.password = make_password(password)
-            
-#         instance.save()
-#         return instance
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "national_id",
+            "name",
+            "email",
+            "username",
+            "mobile_phone",
+            "gender",
+            "birth_date",
+            "role",
+            "password",
+        ] 
 
 
+class DoctorSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+
+    class Meta:
+        model = Doctor
+        fields = '__all__'
 
 
+class PatientSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
 
+    class Meta:
+        model = Patient
+        fields = '__all__'
 
 
 
@@ -49,11 +40,6 @@ class AvailableTimeSerializer(serializers.ModelSerializer):
     class Meta:
         model = AvailableTime
         fields = "__all__"
-
-
-
-
-
 
 
 
@@ -91,21 +77,5 @@ class FeedbackSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = '__all__'
 
-class PatientSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
 
-    class Meta:
-        model = Patient
-        fields = '__all__'
-
-class DoctorSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-
-    class Meta:
-        model = Doctor
-        fields = '__all__'
