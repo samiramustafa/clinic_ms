@@ -250,6 +250,7 @@ class Appointment(models.Model):
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name="appointments")
     available_time = models.ForeignKey(AvailableTime, on_delete=models.CASCADE, related_name="appointments")
     status = models.CharField(max_length=10, choices=StatusChoices.choices, default="pending")
+   
     
 
 
