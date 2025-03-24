@@ -3,6 +3,7 @@ from django.urls import include, path
 # from.views import UserDetailView, UserListCreateView
 from .views import AppointmentDetailView, AppointmentListCreateView, AvailableTimeDetailView, AvailableTimeListCreateView, DoctorViewSet, FeedbackDetailView, FeedbackListCreateView, PatientViewSet, UserViewSet
 from rest_framework.routers import DefaultRouter
+from .views import login_view
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
@@ -11,6 +12,8 @@ router.register(r'doctors', DoctorViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('login/', login_view, name='login'),
+
 
     # path("users/", UserListCreateAPIView.as_view(), name="user-list-create"),
     # path("users/<int:pk>/", UserDetailAPIView.as_view(), name="user-detail"),
@@ -23,3 +26,5 @@ urlpatterns = [
     
 
 ]
+
+    
