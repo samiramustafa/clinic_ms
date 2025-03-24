@@ -16,6 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
             "birth_date",
             "role",
             "password",
+            "profile_picture",
         ] 
 
 
