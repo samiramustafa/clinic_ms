@@ -1,41 +1,78 @@
 from rest_framework import serializers
-from .models import Appointment, Feedback, User, AvailableTime, Patient, Doctor
+from .models import *
 from django.contrib.auth.hashers import make_password
 
+
 class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True)
+    doctor_profile = serializers.SerializerMethodField()
+    image = serializers.ImageField(required=False, allow_null=True)  # ✅ السماح برفع صورة للطبيب
+    date_of_birth = serializers.DateField(required=False, allow_null=True)  # ✅ إضافة تاريخ الميلاد للمريض
+
     class Meta:
-        model = User
-        fields = [
-            "id",
-            "national_id",
-            "name",
-            "email",
-            "username",
-            "mobile_phone",
-            "gender",
-            "birth_date",
-            "role",
-            "password",
-            "profile_picture",
-        ] 
+        model = CustomUser
+        fields = ['id', 'username', 'full_name', 'phone_number', 'role', 'city', 'area', 'national_id', 'password', 'doctor_profile', 'image', 'date_of_birth']
 
+    def get_doctor_profile(self, obj):
+        """ ✅ استرجاع بيانات الطبيب إذا كان المستخدم طبيبًا """
+        if hasattr(obj, 'doctor_profile'):
+            return {
+                "speciality": obj.doctor_profile.speciality,
+                "image": obj.doctor_profile.image.url if obj.doctor_profile.image else None
+            }
+        return None
 
+    def validate_date_of_birth(self, value):
+        """ ✅ التأكد من أن عمر المريض لا يقل عن 18 سنة """
+        if value:
+            today = date.today()
+            age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
+            if age < 18:
+                raise serializers.ValidationError("Patient must be at least 18 years old.")
+        return value
+
+    def create(self, validated_data):
+        validated_data["password"] = make_password(validated_data["password"])
+        image = validated_data.pop("image", None)
+        birth_date = validated_data.pop("date_of_birth", None)  # ✅ تغيير الاسم ليتوافق مع `models.py`
+
+        user = CustomUser.objects.create(**validated_data)
+
+        if user.role == "doctor":
+            speciality = self.initial_data.get("speciality", "General")
+            doctor = Doctor.objects.create(user=user, speciality=speciality)
+            if image:
+                doctor.image = image
+                doctor.save()
+
+        elif user.role == "patient":
+            gender = self.initial_data.get("gender", "male")
+            if not birth_date:
+                raise serializers.ValidationError({"birth_date": "Patient must provide a valid birth date."})
+            Patient.objects.create(user=user, gender=gender, birth_date=birth_date)  # ✅ استخدام `birth_date` الصحيح
+
+        return user
+# Serializer for Doctor
 class DoctorSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-
     class Meta:
         model = Doctor
         fields = '__all__'
 
-
+# Serializer for Patient
 class PatientSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-
     class Meta:
         model = Patient
         fields = '__all__'
 
-
+class CitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = City
+        fields = ['id', 'name']
+        
+class AreaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Area
+        fields = ['id', 'name', 'city']
 
 class AvailableTimeSerializer(serializers.ModelSerializer):
     class Meta:
