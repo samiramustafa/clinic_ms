@@ -1,6 +1,16 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import Appointment, Feedback, User, AvailableTime, Patient, Doctor
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.backends import ModelBackend
+
+from django.contrib.auth import authenticate, get_user_model
+from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,6 +29,42 @@ class UserSerializer(serializers.ModelSerializer):
             "profile_picture",
         ] 
 
+class EmailBackend(ModelBackend):
+    def authenticate(self, request, email=None, password=None, **kwargs):
+        User = get_user_model()
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return None
+        if user.check_password(password):
+            return user
+        return None
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+
+    def validate(self, attrs):
+        User = get_user_model()
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        if not email or not password:
+            raise serializers.ValidationError("Please provide both email and password.")
+        
+        user = EmailBackend().authenticate(request=self.context.get('request'), email=email, password=password)
+        
+        if user is None:
+            raise serializers.ValidationError("🚫 البريد الإلكتروني أو كلمة المرور غير صحيحة.")
+        
+        if not user.is_active:
+            raise serializers.ValidationError("🚫 هذا الحساب غير مفعل.")
+
+        data = super().validate(attrs)
+
+        data["email"] = user.email
+        data["username"] = user.username
+        data["role"] = user.role if hasattr(user, "role") else "user"
+
+        return data
 
 class DoctorSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())

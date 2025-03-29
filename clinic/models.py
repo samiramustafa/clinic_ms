@@ -78,6 +78,8 @@ class User(AbstractUser):
         max_length=10, choices=RoleChoices.choices, default=RoleChoices.PATIENT, blank=True
     )
 
+    is_active = models.BooleanField(default=True)
+
     groups = models.ManyToManyField(
         "auth.Group",
         related_name="custom_user_groups",

@@ -1,9 +1,11 @@
 from django.urls import include, path
-
 # from.views import UserDetailView, UserListCreateView
-from .views import AppointmentDetailView, AppointmentListCreateView, AvailableTimeDetailView, AvailableTimeListCreateView, DoctorViewSet, FeedbackDetailView, FeedbackListCreateView, PatientViewSet, UserViewSet
 from rest_framework.routers import DefaultRouter
-from .views import login_view
+from .views import CustomTokenObtainPairView
+from rest_framework_simplejwt.views import TokenRefreshView
+from .views import AppointmentDetailView, AppointmentListCreateView, AvailableTimeDetailView, AvailableTimeListCreateView, DoctorViewSet, FeedbackDetailView, FeedbackListCreateView, PatientViewSet, UserViewSet
+
+
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
@@ -11,8 +13,11 @@ router.register(r'patients', PatientViewSet)
 router.register(r'doctors', DoctorViewSet)
 
 urlpatterns = [
+
     path('', include(router.urls)),
-    path('login/', login_view, name='login'),
+    path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
 
 
     # path("users/", UserListCreateAPIView.as_view(), name="user-list-create"),

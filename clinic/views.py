@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework import viewsets
 from .models import Appointment, AvailableTime, Feedback, User, Patient, Doctor
-from .serializers import AppointmentSerializer, AvailableTimeSerializer, FeedbackSerializer, UserSerializer, PatientSerializer, DoctorSerializer
+from .serializers import AppointmentSerializer, AvailableTimeSerializer, FeedbackSerializer, UserSerializer, PatientSerializer, DoctorSerializer,CustomTokenObtainPairSerializer
 from rest_framework.response import Response
 from rest_framework import status, permissions
 
@@ -11,6 +11,15 @@ from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view
 from rest_framework import status
+
+
+
+from django.contrib.auth import authenticate, get_user_model
+from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -25,21 +34,37 @@ class DoctorViewSet(viewsets.ModelViewSet):
     queryset = Doctor.objects.all()
     serializer_class = DoctorSerializer
 
-@api_view(['POST'])
-def login_view(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
 
-    user = authenticate(username=username, password=password)
+# class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+   
+#     def validate(self, attrs):
+#         data = super().validate(attrs)
+#         user = self.user
 
-    if user is not None:
-        if not user.is_active:
-            return Response({"error": "This account is inactive."}, status=status.HTTP_403_FORBIDDEN)
+#         if not user.is_active:
+#             raise serializers.ValidationError("🚫 هذا الحساب غير مفعل.")
 
-        token, created = Token.objects.get_or_create(user=user)
-        return Response({"token": token.key, "message": "Login successful"}, status=status.HTTP_200_OK)
+#         # ✅ أضف بيانات المستخدم إلى التوكن
+#         data['username'] = user.username
+#         # data['role'] = "doctor" if user.is_staff else "patient"
+#         # data['role'] = user.role
+#         if user.groups.filter(name="Doctor").exists():
+#             data['role'] = "doctor"
+#         elif user.groups.filter(name="Patient").exists():
+#             data['role'] = "patient"
+#         else:
+#             data['role'] = "admin"
 
-    return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+#         return data
+
+
+
+
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
 
 
 
