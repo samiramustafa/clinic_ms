@@ -157,7 +157,7 @@ class Doctor(models.Model):
             self.save()
 
     def __str__(self):
-        return f"Dr. {self.user.name} - {self.specialization}"
+        return f"Dr. {self.user.username} - {self.speciality}"
     
 
 

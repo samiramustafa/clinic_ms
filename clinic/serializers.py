@@ -1,13 +1,15 @@
 from rest_framework import serializers
 from .models import *
 from django.contrib.auth.hashers import make_password
+from rest_framework import serializers
+from .models import Appointment, AvailableTime
 
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
     doctor_profile = serializers.SerializerMethodField()
-    image = serializers.ImageField(required=False, allow_null=True)  # ✅ السماح برفع صورة للطبيب
-    date_of_birth = serializers.DateField(required=False, allow_null=True)  # ✅ إضافة تاريخ الميلاد للمريض
+    image = serializers.ImageField(required=False, allow_null=True)  
+    date_of_birth = serializers.DateField(required=False, allow_null=True)  
 
     class Meta:
         model = CustomUser
@@ -79,33 +81,6 @@ class AvailableTimeSerializer(serializers.ModelSerializer):
         model = AvailableTime
         fields = "__all__"
 
-
-
-# class AppointmentSerializer(serializers.ModelSerializer):
-#     date = serializers.DateField(source="available_time.date", read_only=True)
-#     time_range = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = Appointment
-#         fields = ("id", "patient", "doctor", "available_time", "date", "time_range", "status")
-
-#     def get_time_range(self, obj):
-#         return f"{obj.available_time.start_time} - {obj.available_time.end_time}" if obj.available_time else None
-
-#     def validate(self, data):
- 
-#         available_time = data.get("available_time")
-#         doctor = data.get("doctor")
-
-#         if available_time and doctor and available_time.doctor != doctor:
-#             raise serializers.ValidationError(
-#                 {"available_time": "The selected available time does not belong to the chosen doctor."}
-#             )
-
-#         return data
-
-from rest_framework import serializers
-from .models import Appointment, AvailableTime
 
 class AppointmentSerializer(serializers.ModelSerializer):
     date = serializers.DateField(source="available_time.date", read_only=True)
