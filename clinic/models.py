@@ -1,7 +1,7 @@
 from django.utils import timezone
 from django.db import models
 import re
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.validators import RegexValidator
@@ -56,82 +56,96 @@ def validate_time_order(start_time, end_time):
         return
     if start_time >= end_time:
         raise ValidationError("Start time must be before end time.")
+    
 
-#  main user  ##
-
-class User(AbstractUser):
-    national_id = models.CharField(
-        max_length=14, unique=True, null=True, blank=True, validators=[validate_national_id]
-    )
-    name = models.CharField(max_length=50, validators=[validate_name])
-    email = models.EmailField(unique=True)
-    mobile_phone = models.CharField(
-        max_length=11, unique=True, null=True, blank=True, validators=[validate_phone_number]
-    ) 
-    profile_picture = models.ImageField(upload_to="profile_pics/", blank=True, null=True)
-    gender = models.CharField(
-        max_length=1, choices=GenderChoices.choices, null=True, blank=True
-    )
-    birth_date = models.DateField(null=True, blank=True)
-    role = models.CharField(
-        max_length=10, choices=RoleChoices.choices, default=RoleChoices.PATIENT, blank=True
-    )
-
-    groups = models.ManyToManyField(
-        "auth.Group",
-        related_name="custom_user_groups",
-        blank=True,
-        help_text="The groups this user belongs to.",
-    )
-    user_permissions = models.ManyToManyField(
-        "auth.Permission",
-        related_name="custom_user_permissions",
-        blank=True,
-        help_text="Specific permissions for this user.",
-    )
-
-    def clean(self):
-        super().clean()
-        if self.birth_date and self.birth_date > timezone.now().date():
-            raise ValidationError("Birth date cannot be in the future.")
+# ======================  MODELS  ========================
+# City Model
+class City(models.Model):
+    name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
         return self.name
 
+# Area Model
+class Area(models.Model):
+    name = models.CharField(max_length=100)
+    city = models.ForeignKey(City, on_delete=models.CASCADE, related_name='areas')
+
+    def __str__(self):
+        return f"{self.name} - {self.city.name}"
+
+# Custom User Model
+class CustomUser(AbstractUser):
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('doctor', 'Doctor'),
+        ('patient', 'Patient'),
+    ]
+
+    username = models.CharField(max_length=150, unique=True)
+    full_name = models.CharField(max_length=255, blank=False)
+    phone_number = models.CharField(max_length=15, unique=True)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES,blank=False, null=False)
+    city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True)
+    area = models.ForeignKey(Area, on_delete=models.SET_NULL, null=True, blank=True)
+    national_id = models.CharField(max_length=14, unique=True, blank=True, null=True)
+
+    # السماح بالـ first_name و last_name لكن بدون إجبار
+    first_name = models.CharField(max_length=150, blank=True, null=True)
+    last_name = models.CharField(max_length=150, blank=True, null=True)
+
+    # حل التعارض مع auth.User
+    groups = models.ManyToManyField(Group, related_name="custom_user_groups", blank=True)
+    user_permissions = models.ManyToManyField(Permission, related_name="custom_user_permissions", blank=True)
+
+    def __str__(self):
+     return self.username 
+
 # ======patient model ========
 
 class Patient(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="patient_profile")
-    address = models.TextField(null=True, blank=True)
-    medical_history = models.TextField(null=True, blank=True)
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='patient_profile')
+    birth_date = models.DateField(null=True, blank=True)
+    medical_history = models.TextField(blank=True, null=True)
+    gender = models.CharField(max_length=10, choices=[('male', 'Male'), ('female', 'Female')], default='male')
 
     def clean(self):
-        super().clean()
-        if self.user.role != RoleChoices.PATIENT:
-            raise ValidationError("This profile can only be a user with role 'patient'.")
-        if self.medical_history and len(self.medical_history.strip()) < 10:
-            raise ValidationError("Medical history must be at least 10 characters ")
+        # 1️⃣ منع أن يكون المريض طبيبًا أيضًا
+        if hasattr(self.user, 'doctor_profile'):
+            raise ValidationError("This user is already registered as a Doctor.")
+
+        # 2️⃣ التحقق من العمر (على الأقل 18 سنة)
+        if self.birth_date:
+            today = date.today()
+            age = today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+            if age < 18:
+                raise ValidationError("Patients must be at least 18 years old.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.user.name
-
+        return f"Patient: {self.user.full_name}"
 # ======doctor model ========
 
 class Doctor(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="doctor_profile")
-    specialization = models.CharField(max_length=100)
-    description = models.TextField(null=True, blank=True)
-    fees = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.01)])
-    average_rating = models.FloatField(default=0.0)
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='doctor_profile')
+    speciality = models.CharField(max_length=100, default="General")
+    description = models.TextField(null=True, blank=True)  # ✅ جعل الوصف اختيارياً    
+    fees = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    image = models.ImageField(upload_to='doctor_images/', null=True, blank=True)
 
     def clean(self):
-        super().clean()
-        if self.user.role != RoleChoices.DOCTOR:
-            raise ValidationError("This profile can only be a user with role 'doctor'.")
-        if len(self.specialization.strip()) < 3:
-            raise ValidationError("Specialization must be at least 3 characters long.")
-        if self.description and len(self.description.strip()) < 10:
-            raise ValidationError("Description must be at least 10 characters ")
+        if hasattr(self.user, 'patient_profile'):
+            raise ValidationError("This user is already registered as a Patient.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Dr. {self.user.full_name} - {self.speciality}"
 
     def update_rating(self):
       
@@ -143,18 +157,10 @@ class Doctor(models.Model):
             self.save()
 
     def __str__(self):
-        return f"Dr. {self.user.name} - {self.specialization}"
+        return f"Dr. {self.user.username} - {self.speciality}"
     
 
-    # class DoctorSerializer(serializers.ModelSerializer):
-    # average_rating = serializers.SerializerMethodField()
 
-    # class Meta:
-    #     model = Doctor
-    #     fields = ["id", "user", "specialization", "average_rating"]
-
-    # def get_average_rating(self, obj):
-    #     return obj.average_rating()
 
 
 class Feedback(models.Model):
@@ -180,20 +186,6 @@ class Feedback(models.Model):
         return f"Feedback from {self.patient.user.name} to Dr. {self.doctor.user.name} - {self.rate} ⭐"
 
 
-# class Appointment(models.Model):
-#     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="appointments")
-#     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name="appointments")
-#     start_time = models.TimeField()
-#     end_time = models.TimeField()
-#     date = models.DateField()
-#     status = models.CharField(max_length=10, choices=StatusChoices.choices, default="pending")
-
-
-#     def clean(self):
-#         validate_time_order(self.start_time, self.end_time)
-
-#     def __str__(self):
-#         return f"{self.patient.user.name} - {self.doctor.user.name} ({self.date})"
 
 class AvailableTime(models.Model):
     doctor = models.ForeignKey(
@@ -246,18 +238,9 @@ class Appointment(models.Model):
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name="appointments")
     available_time = models.ForeignKey(AvailableTime, on_delete=models.CASCADE, related_name="appointments")
     status = models.CharField(max_length=10, choices=StatusChoices.choices, default="pending")
-
-    
-       
-        
-        
    
+    
+
 
     def __str__(self):
         return f"{self.patient.user.name} - {self.available_time.doctor.user.name} ({self.available_time.date} {self.available_time.start_time} - {self.available_time.end_time})"
-
-
-
-
-
-

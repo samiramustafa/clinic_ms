@@ -2,69 +2,119 @@ from django.shortcuts import get_object_or_404, render
 from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework import viewsets
-from .models import Appointment, AvailableTime, Feedback, User, Patient, Doctor
-from .serializers import AppointmentSerializer, AvailableTimeSerializer, FeedbackSerializer, UserSerializer, PatientSerializer, DoctorSerializer
+from .models import *
+from .serializers import *
 from rest_framework.response import Response
 from rest_framework import status, permissions
+from rest_framework.permissions import AllowAny
+from django.contrib.auth import get_user_model
+from rest_framework.permissions import IsAuthenticated
+
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import api_view
+from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.generics import ListAPIView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 
-# class UserListCreateView(generics.ListCreateAPIView):
-#     queryset = User.objects.all()
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserSerializer
+
+    def get_permissions(self):
+        if self.action == "create":  # السماح بتسجيل مستخدم جديد بدون توثيق
+            return [AllowAny()]
+        return [IsAuthenticated()]  # باقي العمليات تتطلب توثيق
+
+    @action(detail=False, methods=['get', 'put'])
+    def me(self, request):
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"detail": "Authentication credentials were not provided."}, status=401)
+
+        if request.method == "GET":
+            serializer = self.get_serializer(user)
+            return Response(serializer.data)
+
+        elif request.method == "PUT":
+            serializer = self.get_serializer(user, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=400)
+# User = get_user_model()
+
+# class UserViewSet(viewsets.ModelViewSet):
+#     queryset = CustomUser.objects.all()
 #     serializer_class = UserSerializer
+#     permission_classes = [AllowAny]  # ✅ السماح للجميع بالتسجيل بدون مصادقة
 
-# class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
-#     queryset = User.objects.all()
-#     serializer_class = UserSerializer
+#     def get_object(self):
+#         if self.action in ["retrieve", "update"]:
+#             return self.request.user
+#         return super().get_object()
 
+#     def perform_create(self, serializer):
+#         user = serializer.save()
+#         print(f"✅ User Created: {user.username}, Role: {user.role}")
 
+#         if user.role == "doctor" and not Doctor.objects.filter(user=user).exists():
+#             speciality = self.request.data.get("speciality")
+#             if speciality:
+#                 Doctor.objects.create(user=user, speciality=speciality)
+#                 print(f"✅ Doctor Profile Created for {user.username}")
 
-class RegisterView(APIView):
-    def post(self, request):
-        user_data = {
-            "username": request.data.get("username"),
-            "email": request.data.get("email"),
-            "password": request.data.get("password"),
-            "role": request.data.get("role")
-        }
+#         elif user.role == "patient" and not Patient.objects.filter(user=user).exists():
+#             Patient.objects.create(user=user)
+#             print(f"✅ Patient Profile Created for {user.username}")
 
-        user_serializer = UserSerializer(data=user_data)
-        if not user_serializer.is_valid():
-            return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#     @action(detail=False, methods=['get', 'put'], permission_classes=[IsAuthenticated])
+#     def me(self, request):
+#         user = request.user
 
+#         if request.method == "GET":
+#             serializer = self.get_serializer(user)
+#             return Response(serializer.data)
 
-        user = user_serializer.save()
-        user.set_password(request.data["password"])  # تأكد من تشفير كلمة المرور
-        user.save()
+#         elif request.method == "PUT":
+#             serializer = self.get_serializer(user, data=request.data, partial=True)
+#             if serializer.is_valid():
+#                 serializer.save()
+#                 return Response(serializer.data)
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        if user.role == "patient":
-            patient_data = {
-                "user": user.id,  # استخدم `id` بدلًا من `user` نفسه
-                "address": request.data.get("address"),
-                "medical_history": request.data.get("medical_history", ""),
-            }
-            serializer = PatientSerializer(data=patient_data)
-        elif user.role == "doctor":
-            doctor_data = {
-                "user": user.id,
-                "specialization": request.data.get("specialization"),
-                "description": request.data.get("description", ""),
-                "fees": request.data.get("fees", "0.00"),
-            }
-            serializer = DoctorSerializer(data=doctor_data)
-        else:
-            return Response({"error": "Invalid role"}, status=status.HTTP_400_BAD_REQUEST)
+class DoctorViewSet(viewsets.ModelViewSet):
+    queryset = Doctor.objects.all()
+    serializer_class = DoctorSerializer
 
-#         serializer = UserSerializer(user, data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class PatientViewSet(viewsets.ModelViewSet):
+    queryset = Patient.objects.all()
+    serializer_class = PatientSerializer
+    
+class CityViewSet(viewsets.ModelViewSet):
+    queryset = City.objects.all()
+    serializer_class = CitySerializer
+    
+class AreaListView(ListAPIView):
+    serializer_class = AreaSerializer
 
-#     def delete(self, request, pk):
-#         user = get_object_or_404(User, pk=pk)
-#         user.delete()
-#         return Response({"message": "User deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+    def get_queryset(self):
+        city_id = self.request.GET.get("city")
+        if city_id:
+            return Area.objects.filter(city_id=city_id)
+        return Area.objects.all()
 
+@api_view(["POST"])
+def login_view(request):
+    username = request.data.get("username")
+    password = request.data.get("password")
+
+    user = authenticate(username=username, password=password)
+    if user:
+        return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
+    return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -224,8 +274,4 @@ class FeedbackDetailView(APIView):
         doctor.update_rating()
         return Response({"message": "Feedback deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
-
-class DoctorViewSet(viewsets.ModelViewSet):
-    queryset = Doctor.objects.all()
-    serializer_class = DoctorSerializer
 
