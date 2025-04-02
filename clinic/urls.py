@@ -1,7 +1,5 @@
 from django.urls import include, path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
-# from.views import UserDetailView, UserListCreateView
 from .views import *
 from rest_framework.routers import DefaultRouter
 from .views import login_view
@@ -21,8 +19,6 @@ urlpatterns = [
     path('api/users/me/', UserViewSet.as_view({'get': 'me', 'put': 'me'}), name='user-me'),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # ✅ تسجيل الدخول
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  # ✅ تحديث التوكن
-    # path("users/", UserListCreateAPIView.as_view(), name="user-list-create"),
-    # path("users/<int:pk>/", UserDetailAPIView.as_view(), name="user-detail"),
     path("available-times/", AvailableTimeListCreateView.as_view(), name="available_times_list"),
     path("available-times/<int:pk>/", AvailableTimeDetailView.as_view(), name="available_times_details"),
     path("appointments/", AppointmentListCreateView.as_view(), name="appointments_list"),
