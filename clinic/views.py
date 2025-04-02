@@ -29,6 +29,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get', 'put'])
     def me(self, request):
         user = request.user
+        print(user)
         if not user.is_authenticated:
             return Response({"detail": "Authentication credentials were not provided."}, status=401)
 
