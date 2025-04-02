@@ -1,7 +1,6 @@
 from django.shortcuts import get_object_or_404, render
 from rest_framework.views import APIView
-from rest_framework import generics
-from rest_framework import viewsets
+from rest_framework import viewsets,generics
 from .models import *
 from .serializers import *
 from rest_framework.response import Response
@@ -9,7 +8,6 @@ from rest_framework import status, permissions
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated
-
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view
@@ -31,6 +29,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get', 'put'])
     def me(self, request):
         user = request.user
+        print(user)
         if not user.is_authenticated:
             return Response({"detail": "Authentication credentials were not provided."}, status=401)
 
