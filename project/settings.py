@@ -29,6 +29,7 @@ SECRET_KEY = 'django-insecure-x0^=+9a=cznbz-i0rx4dw2-j3my=^v^b$+6owpzv7js%@$ilmi
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
+AUTH_USER_MODEL = 'clinic.CustomUser'
 
 
 # Application definition
@@ -41,8 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    # 'rest_framework.authtoken',
     'rest_framework_simplejwt',
+    'rest_framework.authtoken',
     'clinic',
     # for react
     'corsheaders',
@@ -58,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
 ]
 
 # for react
@@ -65,9 +67,15 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  
 ]
 CORS_ALLOW_ALL_ORIGINS = True #   react
+import os
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 
 ROOT_URLCONF = 'project.urls'
+
+
 
 TEMPLATES = [
     {
@@ -143,27 +151,24 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
 
 AUTHENTICATION_BACKENDS = [
     # 'clinic.backends.EmailBackend', 
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-
-
-
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ),
-}
+from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=7),  # مدة صلاحية Access Token
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30), # مدة صلاحية Refresh Token
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
 }
-
-
-AUTH_USER_MODEL = 'clinic.User'

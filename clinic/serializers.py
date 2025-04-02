@@ -1,120 +1,91 @@
+
 from rest_framework import serializers
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Appointment, Feedback, User, AvailableTime, Patient, Doctor
+from rest_framework import serializers
+from .models import *
 from django.contrib.auth.hashers import make_password
-from django.contrib.auth.backends import ModelBackend
-
-from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
-
+from .models import Appointment, AvailableTime
 
 
 class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True)
+    doctor_profile = serializers.SerializerMethodField()
+    # image = serializers.ImageField(required=False, allow_null=True)  
+    # date_of_birth = serializers.DateField(required=False, allow_null=True)  
+
     class Meta:
-        model = User
-        fields = [
-            "id",
-            "national_id",
-            "name",
-            "email",
-            "username",
-            "mobile_phone",
-            "gender",
-            "birth_date",
-            "role",
-            "password",
-            "profile_picture",
-        ] 
+        model = CustomUser
+        fields = ['id', 'username', 'full_name', 'phone_number', 'role', 'city', 'area', 'national_id', 'password', 'doctor_profile' ]
 
-# class EmailBackend(ModelBackend):
-#     def authenticate(self, request, email=None, password=None, **kwargs):
-#         User = get_user_model()
-#         try:
-#             user = User.objects.get(email=email)
-#         except User.DoesNotExist:
-#             return None
-#         if user.check_password(password):
-#             return user
-#         return None
+    def get_doctor_profile(self, obj):
+        """ ✅ استرجاع بيانات الطبيب إذا كان المستخدم طبيبًا """
+        if hasattr(obj, 'doctor_profile'):
+            return {
+                "speciality": obj.doctor_profile.speciality,
+                "image": obj.doctor_profile.image.url if obj.doctor_profile.image else None,
+                "fees": obj.doctor_profile.fees,
+                "description": obj.doctor_profile.description,
+               
+            }
+        return None
 
-# class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate_date_of_birth(self, value):
+        """ ✅ التأكد من أن عمر المريض لا يقل عن 18 سنة """
+        if value:
+            today = date.today()
+            age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
+            if age < 18:
+                raise serializers.ValidationError("Patient must be at least 18 years old.")
+        return value
 
-#     def validate(self, attrs):
-#         User = get_user_model()
-#         email = attrs.get('email')
-#         password = attrs.get('password')
+    def create(self, validated_data):
+        validated_data["password"] = make_password(validated_data["password"])
+        image = validated_data.pop("image", None)
+        birth_date = validated_data.pop("date_of_birth", None)  # ✅ تغيير الاسم ليتوافق مع `models.py`
 
-#         if not email or not password:
-#             raise serializers.ValidationError("Please provide both email and password.")
-        
-#         user = EmailBackend().authenticate(request=self.context.get('request'), email=email, password=password)
-        
-#         if user is None:
-#             raise serializers.ValidationError("🚫 البريد الإلكتروني أو كلمة المرور غير صحيحة.")
-        
-#         if not user.is_active:
-#             raise serializers.ValidationError("🚫 هذا الحساب غير مفعل.")
+        user = CustomUser.objects.create(**validated_data)
 
-#         data = super().validate(attrs)
+        if user.role == "doctor":
+            speciality = self.initial_data.get("speciality", "General")
+            doctor = Doctor.objects.create(user=user, speciality=speciality)
+            if image:
+                doctor.image = image
+                doctor.save()
 
-#         data["email"] = user.email
-#         data["username"] = user.username
-#         data["role"] = user.role if hasattr(user, "role") else "user"
+        elif user.role == "patient":
+            gender = self.initial_data.get("gender", "male")
+            if not birth_date:
+                raise serializers.ValidationError({"birth_date": "Patient must provide a valid birth date."})
+            Patient.objects.create(user=user, gender=gender, birth_date=birth_date)  # ✅ استخدام `birth_date` الصحيح
 
-#         return data
-
+        return user
+# Serializer for Doctor
 class DoctorSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-
     class Meta:
         model = Doctor
         fields = '__all__'
 
-
+# Serializer for Patient
 class PatientSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-
     class Meta:
         model = Patient
         fields = '__all__'
 
-
+class CitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = City
+        fields = ['id', 'name']
+        
+class AreaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Area
+        fields = ['id', 'name', 'city']
 
 class AvailableTimeSerializer(serializers.ModelSerializer):
     class Meta:
         model = AvailableTime
         fields = "__all__"
 
-
-
-# class AppointmentSerializer(serializers.ModelSerializer):
-#     date = serializers.DateField(source="available_time.date", read_only=True)
-#     time_range = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = Appointment
-#         fields = ("id", "patient", "doctor", "available_time", "date", "time_range", "status")
-
-#     def get_time_range(self, obj):
-#         return f"{obj.available_time.start_time} - {obj.available_time.end_time}" if obj.available_time else None
-
-#     def validate(self, data):
- 
-#         available_time = data.get("available_time")
-#         doctor = data.get("doctor")
-
-#         if available_time and doctor and available_time.doctor != doctor:
-#             raise serializers.ValidationError(
-#                 {"available_time": "The selected available time does not belong to the chosen doctor."}
-#             )
-
-#         return data
-
-from rest_framework import serializers
-from .models import Appointment, AvailableTime
 
 class AppointmentSerializer(serializers.ModelSerializer):
     date = serializers.DateField(source="available_time.date", read_only=True)
