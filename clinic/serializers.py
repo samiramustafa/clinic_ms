@@ -61,12 +61,14 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 # Serializer for Doctor
 class DoctorSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
     class Meta:
         model = Doctor
         fields = '__all__'
 
 # Serializer for Patient
 class PatientSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
     class Meta:
         model = Patient
         fields = '__all__'
@@ -153,7 +155,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
 # ===feedbacks================
 
 class FeedbackSerializer(serializers.ModelSerializer):
-    patient_name = serializers.CharField(source="patient.user.name", read_only=True)
+    patient_name = serializers.CharField(source="patient.user.username", read_only=True)
 
     class Meta:
         model = Feedback

@@ -99,22 +99,22 @@ class CustomUser(AbstractUser):
     groups = models.ManyToManyField(Group, related_name="custom_user_groups", blank=True)
     user_permissions = models.ManyToManyField(Permission, related_name="custom_user_permissions", blank=True)
 
-    # def clean(self):
-    #     """
-    #     تأكد من صحة البيانات قبل الحفظ.
-    #     """
-    #     # تأكد من أن `full_name` يحتوي على أكثر من كلمتين
-    #     if len(self.full_name.split()) < 2:
-    #         raise ValidationError({"full_name": "Full name must contain at least two words."})
+    def clean(self):
+        """
+        تأكد من صحة البيانات قبل الحفظ.
+        """
+        # تأكد من أن `full_name` يحتوي على أكثر من كلمتين
+        if len(self.full_name.split()) < 2:
+            raise ValidationError({"full_name": "Full name must contain at least two words."})
 
-    #     # تأكد من أن الاسم الأول والأخير ليس فارغًا إذا تم إدخالهما
-    #     if self.first_name and len(self.first_name.strip()) == 0:
-    #         raise ValidationError({"first_name": "First name cannot be just spaces."})
+        # تأكد من أن الاسم الأول والأخير ليس فارغًا إذا تم إدخالهما
+        if self.first_name and len(self.first_name.strip()) == 0:
+            raise ValidationError({"first_name": "First name cannot be just spaces."})
 
-    #     if self.last_name and len(self.last_name.strip()) == 0:
-    #         raise ValidationError({"last_name": "Last name cannot be just spaces."})
+        if self.last_name and len(self.last_name.strip()) == 0:
+            raise ValidationError({"last_name": "Last name cannot be just spaces."})
 
-    #     super().clean()  # استدعاء `clean()` الأصلية
+        super().clean()  # استدعاء `clean()` الأصلية
 
     def save(self, *args, **kwargs):
         """
@@ -189,6 +189,7 @@ class Doctor(models.Model):
     description = models.TextField(null=True, blank=True)  # ✅ جعل الوصف اختيارياً    
     fees = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     image = models.ImageField(upload_to='doctor_images/', null=True, blank=True)
+    average_rating = models.FloatField(default=0.0)
 
     def clean(self):
         if hasattr(self.user, 'patient_profile'):
@@ -197,9 +198,6 @@ class Doctor(models.Model):
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"Dr. {self.user.full_name} - {self.speciality}"
 
     def update_rating(self):
       
@@ -211,7 +209,9 @@ class Doctor(models.Model):
             self.save()
 
     def __str__(self):
-        return f"Dr. {self.user.username} - {self.speciality}"
+        return f"Dr. {self.user.full_name} - {self.speciality}"
+
+
     
 
 
@@ -237,7 +237,7 @@ class Feedback(models.Model):
         self.doctor.update_rating() 
     
     def __str__(self):
-        return f"Feedback from {self.patient.user.name} to Dr. {self.doctor.user.name} - {self.rate} ⭐"
+        return f"Feedback from {self.patient.user.username} to Dr. {self.doctor.user.username} - {self.rate} ⭐"
 
 
 
