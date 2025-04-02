@@ -283,7 +283,7 @@ class AvailableTime(models.Model):
             raise ValidationError(_("You must specify either a day or a specific date."))
 
     def __str__(self):
-        return f"{self.doctor.user.name} - {self.day or self.date} ({self.start_time} - {self.end_time})"
+        return f"{self.doctor.user.username} - {self.day or self.date} ({self.start_time} - {self.end_time})"
 
 
 
