@@ -145,9 +145,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 AUTHENTICATION_BACKENDS = [
-     'clinic.backends.EmailBackend', 
+    # 'clinic.backends.EmailBackend', 
     'django.contrib.auth.backends.ModelBackend',
 ]
+
 
 
 

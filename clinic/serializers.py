@@ -29,42 +29,42 @@ class UserSerializer(serializers.ModelSerializer):
             "profile_picture",
         ] 
 
-class EmailBackend(ModelBackend):
-    def authenticate(self, request, email=None, password=None, **kwargs):
-        User = get_user_model()
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return None
-        if user.check_password(password):
-            return user
-        return None
+# class EmailBackend(ModelBackend):
+#     def authenticate(self, request, email=None, password=None, **kwargs):
+#         User = get_user_model()
+#         try:
+#             user = User.objects.get(email=email)
+#         except User.DoesNotExist:
+#             return None
+#         if user.check_password(password):
+#             return user
+#         return None
 
-class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+# class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
-    def validate(self, attrs):
-        User = get_user_model()
-        email = attrs.get('email')
-        password = attrs.get('password')
+#     def validate(self, attrs):
+#         User = get_user_model()
+#         email = attrs.get('email')
+#         password = attrs.get('password')
 
-        if not email or not password:
-            raise serializers.ValidationError("Please provide both email and password.")
+#         if not email or not password:
+#             raise serializers.ValidationError("Please provide both email and password.")
         
-        user = EmailBackend().authenticate(request=self.context.get('request'), email=email, password=password)
+#         user = EmailBackend().authenticate(request=self.context.get('request'), email=email, password=password)
         
-        if user is None:
-            raise serializers.ValidationError("🚫 البريد الإلكتروني أو كلمة المرور غير صحيحة.")
+#         if user is None:
+#             raise serializers.ValidationError("🚫 البريد الإلكتروني أو كلمة المرور غير صحيحة.")
         
-        if not user.is_active:
-            raise serializers.ValidationError("🚫 هذا الحساب غير مفعل.")
+#         if not user.is_active:
+#             raise serializers.ValidationError("🚫 هذا الحساب غير مفعل.")
 
-        data = super().validate(attrs)
+#         data = super().validate(attrs)
 
-        data["email"] = user.email
-        data["username"] = user.username
-        data["role"] = user.role if hasattr(user, "role") else "user"
+#         data["email"] = user.email
+#         data["username"] = user.username
+#         data["role"] = user.role if hasattr(user, "role") else "user"
 
-        return data
+#         return data
 
 class DoctorSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())

@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework import viewsets
 from .models import Appointment, AvailableTime, Feedback, User, Patient, Doctor
-from .serializers import AppointmentSerializer, AvailableTimeSerializer, FeedbackSerializer, UserSerializer, PatientSerializer, DoctorSerializer,CustomTokenObtainPairSerializer
+from .serializers import AppointmentSerializer, AvailableTimeSerializer, FeedbackSerializer, UserSerializer, PatientSerializer, DoctorSerializer
 from rest_framework.response import Response
 from rest_framework import status, permissions
 
@@ -62,8 +62,8 @@ class DoctorViewSet(viewsets.ModelViewSet):
 
 
 
-class CustomTokenObtainPairView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
+# class CustomTokenObtainPairView(TokenObtainPairView):
+#     serializer_class = CustomTokenObtainPairSerializer
 
 
 
