@@ -163,8 +163,8 @@ class Doctor(models.Model):
     description = models.TextField(null=True, blank=True)  # ✅ جعل الوصف اختيارياً    
     fees = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     image = models.ImageField(upload_to='doctor_images/', null=True, blank=True)
-    is_active = models.BooleanField(default=True)
-    card = models.CharField(max_length=14,null=True,blank=True, unique=True)
+    average_rating = models.FloatField(default=0.0)
+
     def clean(self):
         if hasattr(self.user, 'patient_profile'):
             raise ValidationError("This user is already registered as a Patient.")
@@ -172,9 +172,6 @@ class Doctor(models.Model):
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"Dr. {self.user.full_name} - {self.speciality}"
 
     def update_rating(self):
       
@@ -186,7 +183,9 @@ class Doctor(models.Model):
             self.save()
 
     def __str__(self):
-        return f"Dr. {self.user.username} - {self.speciality}"
+        return f"Dr. {self.user.full_name} - {self.speciality}"
+
+
     
 
 
@@ -212,7 +211,7 @@ class Feedback(models.Model):
         self.doctor.update_rating() 
     
     def __str__(self):
-        return f"Feedback from {self.patient.user.name} to Dr. {self.doctor.user.name} - {self.rate} ⭐"
+        return f"Feedback from {self.patient.user.username} to Dr. {self.doctor.user.username} - {self.rate} ⭐"
 
 
 

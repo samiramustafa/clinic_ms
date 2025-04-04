@@ -62,6 +62,7 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 class DoctorSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
     class Meta:
         model = Doctor
         fields = '__all__'
@@ -70,6 +71,7 @@ class DoctorSerializer(serializers.ModelSerializer):
 class PatientSerializer(serializers.ModelSerializer):
     birth_date = serializers.DateField(required=False, allow_null=True)  
 
+    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
     class Meta:
         model = Patient
         fields = '__all__'
@@ -155,7 +157,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
 # ===feedbacks================
 
 class FeedbackSerializer(serializers.ModelSerializer):
-    patient_name = serializers.CharField(source="patient.user.name", read_only=True)
+    patient_name = serializers.CharField(source="patient.user.username", read_only=True)
 
     class Meta:
         model = Feedback
