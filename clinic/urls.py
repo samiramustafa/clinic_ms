@@ -4,6 +4,7 @@ from .views import *
 from rest_framework.routers import DefaultRouter
 from .views import login_view
 
+
 router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='user')
 router.register(r'patients', PatientViewSet)
@@ -12,13 +13,13 @@ router.register(r'cities', CityViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('login/', login_view, name='login'),
+    # path('login/', login_view, name='login'),
     path("api/cities/", CityViewSet.as_view({"get": "list"}), name="cities-list"),
     path("api/areas/", AreaListView.as_view(), name="area-list"),
     path('api/', include(router.urls)),
     path('api/users/me/', UserViewSet.as_view({'get': 'me', 'put': 'me'}), name='user-me'),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # ✅ تسجيل الدخول
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  # ✅ تحديث التوكن
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'), 
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), 
     path("available-times/", AvailableTimeListCreateView.as_view(), name="available_times_list"),
     path("available-times/<int:pk>/", AvailableTimeDetailView.as_view(), name="available_times_details"),
     path("appointments/", AppointmentListCreateView.as_view(), name="appointments_list"),
@@ -28,5 +29,6 @@ urlpatterns = [
     
 
 ]
+
 
     

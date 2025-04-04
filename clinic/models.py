@@ -95,65 +95,39 @@ class CustomUser(AbstractUser):
 
     first_name = models.CharField(max_length=150, blank=True, null=True, validators=[validate_name])
     last_name = models.CharField(max_length=150, blank=True, null=True, validators=[validate_name])
+    email = models.EmailField(blank=True, null=True)
+   
 
     groups = models.ManyToManyField(Group, related_name="custom_user_groups", blank=True)
     user_permissions = models.ManyToManyField(Permission, related_name="custom_user_permissions", blank=True)
 
-    def clean(self):
+    def validate(self):
         """
-        تأكد من صحة البيانات قبل الحفظ.
+        تأكد من صحة البيانات المدخلة.
         """
-        # تأكد من أن `full_name` يحتوي على أكثر من كلمتين
+        # تحقق من أن الاسم الكامل يحتوي على أكثر من كلمتين
         if len(self.full_name.split()) < 2:
             raise ValidationError({"full_name": "Full name must contain at least two words."})
 
-        # تأكد من أن الاسم الأول والأخير ليس فارغًا إذا تم إدخالهما
+        # تحقق من أن الاسم الأول والأخير ليس فارغًا إذا تم إدخالهما
         if self.first_name and len(self.first_name.strip()) == 0:
             raise ValidationError({"first_name": "First name cannot be just spaces."})
 
         if self.last_name and len(self.last_name.strip()) == 0:
             raise ValidationError({"last_name": "Last name cannot be just spaces."})
 
-        super().clean()  # استدعاء `clean()` الأصلية
 
-    def save(self, *args, **kwargs):
-        """
-        استدعاء `clean()` قبل الحفظ لضمان صحة البيانات.
-        """
-        self.clean()
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     """
+    #     استدعاء `clean()` قبل الحفظ لضمان صحة البيانات.
+    #     """
+    #     self.validate()
+    #     super().save(*args, **kwargs)
 
     def __str__(self):
         return self.username
 
 
-# # Custom User Model
-#القديم 
-# class CustomUser(AbstractUser):
-#     ROLE_CHOICES = [
-#         ('admin', 'Admin'),
-#         ('doctor', 'Doctor'),
-#         ('patient', 'Patient'),
-#     ]
-
-#     username = models.CharField(max_length=150, unique=True)
-#     full_name = models.CharField(max_length=255, blank=False)
-#     phone_number = models.CharField(max_length=15, unique=True)
-#     role = models.CharField(max_length=10, choices=ROLE_CHOICES,blank=False, null=False)
-#     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True)
-#     area = models.ForeignKey(Area, on_delete=models.SET_NULL, null=True, blank=True)
-#     national_id = models.CharField(max_length=14, unique=True, blank=True, null=True)
-
-#     # السماح بالـ first_name و last_name لكن بدون إجبار
-#     first_name = models.CharField(max_length=150, blank=True, null=True)
-#     last_name = models.CharField(max_length=150, blank=True, null=True)
-
-#     # حل التعارض مع auth.User
-#     groups = models.ManyToManyField(Group, related_name="custom_user_groups", blank=True)
-#     user_permissions = models.ManyToManyField(Permission, related_name="custom_user_permissions", blank=True)
-
-#     def __str__(self):
-#      return self.username 
 
 # ======patient model ========
 
@@ -189,7 +163,8 @@ class Doctor(models.Model):
     description = models.TextField(null=True, blank=True)  # ✅ جعل الوصف اختيارياً    
     fees = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     image = models.ImageField(upload_to='doctor_images/', null=True, blank=True)
-
+    is_active = models.BooleanField(default=True)
+    card = models.CharField(max_length=14,null=True,blank=True, unique=True)
     def clean(self):
         if hasattr(self.user, 'patient_profile'):
             raise ValidationError("This user is already registered as a Patient.")

@@ -1,4 +1,5 @@
 
+from datetime import datetime
 from rest_framework import serializers
 from rest_framework import serializers
 from .models import *
@@ -6,71 +7,72 @@ from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 from .models import Appointment, AvailableTime
 
-
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True)
-    doctor_profile = serializers.SerializerMethodField()
-    # image = serializers.ImageField(required=False, allow_null=True)  
-    # date_of_birth = serializers.DateField(required=False, allow_null=True)  
+
+    gender = serializers.ChoiceField(choices=Patient.gender.field.choices, required=False, write_only=True, allow_blank=True)
+    birth_date = serializers.DateField(required=False, write_only=True, allow_null=True)
+    speciality = serializers.CharField(max_length=100, required=False, write_only=True, allow_blank=True)
+    description = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    fees = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, write_only=True, allow_null=True)
+    image = serializers.ImageField(required=False, write_only=True, allow_null=True)
+    # city=serializers.CharField(source='city.name', read_only=True)
+    # area=serializers.CharField(source='area.name', read_only=True)
+    card=serializers.CharField(required=False, write_only=True, allow_blank=True)
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'full_name', 'phone_number', 'role', 'city', 'area', 'national_id', 'password', 'doctor_profile' ]
+        fields = [
+            'id', 'username', 'full_name', 'phone_number', 'role', 'city', 'area','email',
+            'national_id', 'password','card',
+            'gender', 'birth_date', 'speciality', 'description', 'fees', 'image'
+        ]
 
-    def get_doctor_profile(self, obj):
-        """ ✅ استرجاع بيانات الطبيب إذا كان المستخدم طبيبًا """
-        if hasattr(obj, 'doctor_profile'):
-            return {
-                "speciality": obj.doctor_profile.speciality,
-                "image": obj.doctor_profile.image.url if obj.doctor_profile.image else None,
-                "fees": obj.doctor_profile.fees,
-                "description": obj.doctor_profile.description,
-               
-            }
-        return None
+    def validate(self, data):
+        role = data.get('role')
+        if role == 'patient':
+            birth_date = data.get('birth_date')
+            if birth_date:
+                today = date.today()
+                try:
+                    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                    if age < 18:
+                        raise serializers.ValidationError({"birth_date": "Patients must be at least 18 years old."})
+                except AttributeError:
+                     raise serializers.ValidationError({"birth_date": "Invalid date format provided."})
+        return data
 
-    def validate_date_of_birth(self, value):
-        """ ✅ التأكد من أن عمر المريض لا يقل عن 18 سنة """
-        if value:
-            today = date.today()
-            age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
-            if age < 18:
-                raise serializers.ValidationError("Patient must be at least 18 years old.")
-        return value
 
     def create(self, validated_data):
-        validated_data["password"] = make_password(validated_data["password"])
-        image = validated_data.pop("image", None)
-        birth_date = validated_data.pop("date_of_birth", None)  # ✅ تغيير الاسم ليتوافق مع `models.py`
+        # --- 👇 عدّل الـ create عشان تستخدم الحقول دي وتنشئ البروفايل صح ---
+        gender = validated_data.pop('gender', None)
+        birth_date = validated_data.pop('birth_date', None)
+        speciality = validated_data.pop('speciality', "General") # قيمة افتراضية
+        description = validated_data.pop('description', None)
+        fees = validated_data.pop('fees', None)
+        image = validated_data.pop('image', None)
 
+        validated_data["password"] = make_password(validated_data["password"])
         user = CustomUser.objects.create(**validated_data)
 
         if user.role == "doctor":
-            speciality = self.initial_data.get("speciality", "General")
-            doctor = Doctor.objects.create(user=user, speciality=speciality)
-            if image:
-                doctor.image = image
-                doctor.save()
-
+            Doctor.objects.create(user=user, speciality=speciality, description=description, fees=fees, image=image)
         elif user.role == "patient":
-            gender = self.initial_data.get("gender", "male")
-            if not birth_date:
-                raise serializers.ValidationError({"birth_date": "Patient must provide a valid birth date."})
-            Patient.objects.create(user=user, gender=gender, birth_date=birth_date)  # ✅ استخدام `birth_date` الصحيح
+            Patient.objects.create(user=user, gender=gender or 'male', birth_date=birth_date)
 
         return user
-# Serializer for Doctor
+
 class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
         fields = '__all__'
 
-# Serializer for Patient
+
 class PatientSerializer(serializers.ModelSerializer):
+    birth_date = serializers.DateField(required=False, allow_null=True)  
+
     class Meta:
         model = Patient
         fields = '__all__'
-
 class CitySerializer(serializers.ModelSerializer):
     class Meta:
         model = City
