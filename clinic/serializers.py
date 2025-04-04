@@ -1,3 +1,5 @@
+
+from rest_framework import serializers
 from rest_framework import serializers
 from .models import *
 from django.contrib.auth.hashers import make_password
@@ -8,19 +10,22 @@ from .models import Appointment, AvailableTime
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
     doctor_profile = serializers.SerializerMethodField()
-    image = serializers.ImageField(required=False, allow_null=True)  
-    date_of_birth = serializers.DateField(required=False, allow_null=True)  
+    # image = serializers.ImageField(required=False, allow_null=True)  
+    # date_of_birth = serializers.DateField(required=False, allow_null=True)  
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'full_name', 'phone_number', 'role', 'city', 'area', 'national_id', 'password', 'doctor_profile', 'image', 'date_of_birth']
+        fields = ['id', 'username', 'full_name', 'phone_number', 'role', 'city', 'area', 'national_id', 'password', 'doctor_profile' ]
 
     def get_doctor_profile(self, obj):
         """ ✅ استرجاع بيانات الطبيب إذا كان المستخدم طبيبًا """
         if hasattr(obj, 'doctor_profile'):
             return {
                 "speciality": obj.doctor_profile.speciality,
-                "image": obj.doctor_profile.image.url if obj.doctor_profile.image else None
+                "image": obj.doctor_profile.image.url if obj.doctor_profile.image else None,
+                "fees": obj.doctor_profile.fees,
+                "description": obj.doctor_profile.description,
+               
             }
         return None
 
@@ -56,12 +61,14 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 # Serializer for Doctor
 class DoctorSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
     class Meta:
         model = Doctor
         fields = '__all__'
 
 # Serializer for Patient
 class PatientSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
     class Meta:
         model = Patient
         fields = '__all__'
@@ -148,7 +155,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
 # ===feedbacks================
 
 class FeedbackSerializer(serializers.ModelSerializer):
-    patient_name = serializers.CharField(source="patient.user.name", read_only=True)
+    patient_name = serializers.CharField(source="patient.user.username", read_only=True)
 
     class Meta:
         model = Feedback

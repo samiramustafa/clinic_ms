@@ -72,6 +72,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 ROOT_URLCONF = 'project.urls'
 
+
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -156,3 +158,13 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=7),  # مدة صلاحية Access Token
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30), # مدة صلاحية Refresh Token
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+}

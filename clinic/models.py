@@ -7,7 +7,6 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.validators import RegexValidator
 from datetime import date, timedelta
 from django.db.models import Avg
-
 from django.utils.translation import gettext_lazy as _  
 
 
@@ -36,21 +35,6 @@ class DaysChoices(models.TextChoices):
     SUNDAY = "Sunday", _("Sunday")
 
 
-validate_phone_number = RegexValidator(
-    regex=r"^(010|011|012|015)\d{8}$",
-    message="Phone number must be 11 digits and start with 010, 011, 012, or 015."
-)
-
-validate_national_id = RegexValidator(
-    regex=r"^\d{14}$",
-    message="National ID must be exactly 14 digits."
-)
-
-validate_name = RegexValidator(
-    regex=r"^[a-zA-Z\s]+$",
-    message="Name must contain only letters and spaces."
-)
-
 def validate_time_order(start_time, end_time):
     if start_time is None or end_time is None:
         return
@@ -73,8 +57,9 @@ class Area(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.city.name}"
+# ======================  Custom User Model  ========================
 
-# Custom User Model
+
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [
         ('admin', 'Admin'),
@@ -82,24 +67,93 @@ class CustomUser(AbstractUser):
         ('patient', 'Patient'),
     ]
 
+    # التحقق من رقم الهاتف
+    validate_phone_number = RegexValidator(
+        regex=r"^(010|011|012|015)\d{8}$",
+        message="Phone number must be 11 digits and start with 010, 011, 012, or 015."
+    )
+
+    # التحقق من الرقم القومي
+    validate_national_id = RegexValidator(
+        regex=r"^\d{14}$",
+        message="National ID must be exactly 14 digits."
+    )
+
+    # التحقق من الاسم
+    validate_name = RegexValidator(
+        regex=r"^[a-zA-Z\s]+$",
+        message="Name must contain only letters and spaces."
+    )
+
     username = models.CharField(max_length=150, unique=True)
-    full_name = models.CharField(max_length=255, blank=False)
-    phone_number = models.CharField(max_length=15, unique=True)
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES,blank=False, null=False)
-    city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True)
-    area = models.ForeignKey(Area, on_delete=models.SET_NULL, null=True, blank=True)
-    national_id = models.CharField(max_length=14, unique=True, blank=True, null=True)
+    full_name = models.CharField(max_length=255, blank=False, validators=[validate_name])
+    phone_number = models.CharField(max_length=15, unique=True, validators=[validate_phone_number])
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, blank=False, null=False)
+    city = models.ForeignKey("City", on_delete=models.SET_NULL, null=True, blank=True)
+    area = models.ForeignKey("Area", on_delete=models.SET_NULL, null=True, blank=True)
+    national_id = models.CharField(max_length=14, unique=True, blank=True, null=True, validators=[validate_national_id])
 
-    # السماح بالـ first_name و last_name لكن بدون إجبار
-    first_name = models.CharField(max_length=150, blank=True, null=True)
-    last_name = models.CharField(max_length=150, blank=True, null=True)
+    first_name = models.CharField(max_length=150, blank=True, null=True, validators=[validate_name])
+    last_name = models.CharField(max_length=150, blank=True, null=True, validators=[validate_name])
 
-    # حل التعارض مع auth.User
     groups = models.ManyToManyField(Group, related_name="custom_user_groups", blank=True)
     user_permissions = models.ManyToManyField(Permission, related_name="custom_user_permissions", blank=True)
 
+    def clean(self):
+        """
+        تأكد من صحة البيانات قبل الحفظ.
+        """
+        # تأكد من أن `full_name` يحتوي على أكثر من كلمتين
+        if len(self.full_name.split()) < 2:
+            raise ValidationError({"full_name": "Full name must contain at least two words."})
+
+        # تأكد من أن الاسم الأول والأخير ليس فارغًا إذا تم إدخالهما
+        if self.first_name and len(self.first_name.strip()) == 0:
+            raise ValidationError({"first_name": "First name cannot be just spaces."})
+
+        if self.last_name and len(self.last_name.strip()) == 0:
+            raise ValidationError({"last_name": "Last name cannot be just spaces."})
+
+        super().clean()  # استدعاء `clean()` الأصلية
+
+    def save(self, *args, **kwargs):
+        """
+        استدعاء `clean()` قبل الحفظ لضمان صحة البيانات.
+        """
+        self.clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
-     return self.username 
+        return self.username
+
+
+# # Custom User Model
+#القديم 
+# class CustomUser(AbstractUser):
+#     ROLE_CHOICES = [
+#         ('admin', 'Admin'),
+#         ('doctor', 'Doctor'),
+#         ('patient', 'Patient'),
+#     ]
+
+#     username = models.CharField(max_length=150, unique=True)
+#     full_name = models.CharField(max_length=255, blank=False)
+#     phone_number = models.CharField(max_length=15, unique=True)
+#     role = models.CharField(max_length=10, choices=ROLE_CHOICES,blank=False, null=False)
+#     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True)
+#     area = models.ForeignKey(Area, on_delete=models.SET_NULL, null=True, blank=True)
+#     national_id = models.CharField(max_length=14, unique=True, blank=True, null=True)
+
+#     # السماح بالـ first_name و last_name لكن بدون إجبار
+#     first_name = models.CharField(max_length=150, blank=True, null=True)
+#     last_name = models.CharField(max_length=150, blank=True, null=True)
+
+#     # حل التعارض مع auth.User
+#     groups = models.ManyToManyField(Group, related_name="custom_user_groups", blank=True)
+#     user_permissions = models.ManyToManyField(Permission, related_name="custom_user_permissions", blank=True)
+
+#     def __str__(self):
+#      return self.username 
 
 # ======patient model ========
 
@@ -135,6 +189,7 @@ class Doctor(models.Model):
     description = models.TextField(null=True, blank=True)  # ✅ جعل الوصف اختيارياً    
     fees = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     image = models.ImageField(upload_to='doctor_images/', null=True, blank=True)
+    average_rating = models.FloatField(default=0.0)
 
     def clean(self):
         if hasattr(self.user, 'patient_profile'):
@@ -143,9 +198,6 @@ class Doctor(models.Model):
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"Dr. {self.user.full_name} - {self.speciality}"
 
     def update_rating(self):
       
@@ -157,7 +209,9 @@ class Doctor(models.Model):
             self.save()
 
     def __str__(self):
-        return f"Dr. {self.user.username} - {self.speciality}"
+        return f"Dr. {self.user.full_name} - {self.speciality}"
+
+
     
 
 
@@ -183,7 +237,7 @@ class Feedback(models.Model):
         self.doctor.update_rating() 
     
     def __str__(self):
-        return f"Feedback from {self.patient.user.name} to Dr. {self.doctor.user.name} - {self.rate} ⭐"
+        return f"Feedback from {self.patient.user.username} to Dr. {self.doctor.user.username} - {self.rate} ⭐"
 
 
 
@@ -229,7 +283,7 @@ class AvailableTime(models.Model):
             raise ValidationError(_("You must specify either a day or a specific date."))
 
     def __str__(self):
-        return f"{self.doctor.user.name} - {self.day or self.date} ({self.start_time} - {self.end_time})"
+        return f"{self.doctor.user.username} - {self.day or self.date} ({self.start_time} - {self.end_time})"
 
 
 
