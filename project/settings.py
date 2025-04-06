@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'clinic',
     # for react
     'corsheaders',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
