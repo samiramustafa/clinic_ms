@@ -197,7 +197,8 @@ class Feedback(models.Model):
     feedback = models.TextField()
     rate = models.PositiveSmallIntegerField( validators=[MinValueValidator(1), MaxValueValidator(5)])
     created_at = models.DateTimeField(auto_now_add=True)
-
+    is_active = models.BooleanField(default=True) # اجعل القيمة الافتراضية True (نشط)
+    admin_notes = models.TextField(blank=True, null=True) # اختياري
    
 
     def save(self, *args, **kwargs):
@@ -210,9 +211,11 @@ class Feedback(models.Model):
         super().delete(*args, **kwargs)
         self.doctor.update_rating() 
     
+    # def __str__(self):
+    #     return f"Feedback from {self.patient.user.username} to Dr. {self.doctor.user.username} - {self.rate} ⭐"
     def __str__(self):
-        return f"Feedback from {self.patient.user.username} to Dr. {self.doctor.user.username} - {self.rate} ⭐"
-
+         status = "Active" if self.is_active else "Inactive"
+         return f"Feedback from {self.patient.user.username} to Dr. {self.doctor.user.username} ({self.rate} ⭐) - Status: {status}"
 
 
 class AvailableTime(models.Model):

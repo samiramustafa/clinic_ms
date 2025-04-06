@@ -6,6 +6,7 @@ from .models import *
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 from .models import Appointment, AvailableTime
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer as BaseTokenObtainPairSerializer
 
 class UserSerializer(serializers.ModelSerializer):
 
@@ -62,12 +63,52 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 class DoctorSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
+    # --- الحقول الجديدة اللي هتجيب بيانات من CustomUser المرتبط ---
+    name = serializers.CharField(source='user.full_name', read_only=True)
+    # لاحظ: City و Area هما ForeignKeys في CustomUser، عشان نجيب الاسم محتاجين .name
+    city = serializers.CharField(source='user.city.name', read_only=True, allow_null=True) # Handle cases where city might be null
+    area = serializers.CharField(source='user.area.name', read_only=True, allow_null=True) # Handle cases where area might be null
     class Meta:
         model = Doctor
-        fields = '__all__'
+        # --- حدد الحقول اللي عايزها تظهر في الـ API response ---
+        fields = [
+            'id',           # Doctor ID
+            # 'user',       # شيل ده لو مش عايز الـ ID يظهر باسم 'user'
+            # 'user_id',    # أو استخدم ده لو عايز الـ ID
+            'name',         # اسم الطبيب (من CustomUser)
+            'city',         # اسم المدينة (من CustomUser -> City)
+            'area',         # اسم المنطقة (من CustomUser -> Area)
+            'speciality',   # تخصص الطبيب (من Doctor)
+            'description',  # وصف الطبيب (من Doctor)
+            'fees',         # رسوم الكشف (من Doctor)
+            'image',        # صورة الطبيب (من Doctor)
+            'average_rating'# متوسط التقييم (من Doctor)
+            # ضيف أي حقول تانية محتاجها من موديل Doctor
+        ]
+        read_only_fields = ['name', 'city', 'area', 'average_rating'] # الحقول دي للقراءة فقط هنا
 
+class AdminUserSerializer(serializers.ModelSerializer):
+    # يمكن إضافة حقول من بروفايل المريض/الطبيب إذا لزم الأمر
+    patient_profile_exists = serializers.SerializerMethodField()
+    doctor_profile_exists = serializers.SerializerMethodField()
 
+    class Meta:
+        model = CustomUser
+        fields = [
+            'id', 'username', 'full_name', 'email', 'phone_number', 'role',
+            'city', 'area', 'national_id', # قد لا تحتاج لكل هذا، اختر ما يهم الأدمن
+            'is_active', # حقل is_active الخاص بـ Django User مفيد
+            'date_joined',
+            'patient_profile_exists',
+            'doctor_profile_exists',
+        ]
+        read_only_fields = fields # هذا السيريالايزر للعرض فقط من قبل الأدمن
+
+    def get_patient_profile_exists(self, obj):
+        return hasattr(obj, 'patient_profile')
+
+    def get_doctor_profile_exists(self, obj):
+        return hasattr(obj, 'doctor_profile')
 class PatientSerializer(serializers.ModelSerializer):
     birth_date = serializers.DateField(required=False, allow_null=True)  
 
@@ -156,13 +197,50 @@ class AppointmentSerializer(serializers.ModelSerializer):
 
 # ===feedbacks================
 
+# class FeedbackSerializer(serializers.ModelSerializer):
+#     patient_name = serializers.CharField(source="patient.user.username", read_only=True)
+
+#     class Meta:
+#         model = Feedback
+#         fields = ["id", "patient","patient_name", "doctor", "feedback", "rate", "created_at"]
+
+# In clinic/serializers.py
+
 class FeedbackSerializer(serializers.ModelSerializer):
     patient_name = serializers.CharField(source="patient.user.username", read_only=True)
+    doctor_name = serializers.CharField(source="doctor.user.full_name", read_only=True)
 
     class Meta:
         model = Feedback
-        fields = ["id", "patient","patient_name", "doctor", "feedback", "rate", "created_at"]
+        fields = [
+            "id", "patient", "patient_name", "doctor", "doctor_name",
+            "feedback", # <-- قابل للتعديل
+            "rate",     # <-- قابل للتعديل
+            "created_at",
+            "is_active", # <-- قابل للتعديل
+            "admin_notes" # <-- قابل للتعديل
+        ]
+        # --- 👇 أزل أي حقول تريد تعديلها من هنا ---
+        # read_only_fields = ['patient_name', 'doctor_name', 'created_at', 'patient', 'doctor']
+        # أو يمكنك تحديد الحقول القابلة للقراءة فقط بوضوح:
+        read_only_fields = ['patient_name', 'doctor_name', 'created_at']
+        # لاحظ: patient و doctor يجب أن يكونا للقراءة فقط عادةً لتجنب تغيير لمن يخص التقييم
+
+    # --- 👇 (اختياري ولكن مهم) إضافة تحقق للتأكد أن الـ rate ضمن الحدود عند التعديل ---
+    def validate_rate(self, value):
+         if not (1 <= value <= 5):
+             raise serializers.ValidationError("Rate must be between 1 and 5.")
+         return value
 
 
-
-
+class AdminTokenObtainPairSerializer(BaseTokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        # التحقق من دور المستخدم بعد المصادقة الناجحة
+        if not self.user.role == 'admin':
+            # يمكنك استخدام is_staff بدلاً من role إذا كان هو المحدد للأدمن
+            # if not self.user.is_staff:
+            raise serializers.ValidationError("Access denied. User is not an admin.")
+        # يمكنك إضافة بيانات المستخدم هنا إذا أردت إرجاعها مع التوكن
+        # data['user_role'] = self.user.role
+        return data
