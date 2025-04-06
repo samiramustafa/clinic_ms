@@ -184,22 +184,25 @@ class AppointmentListCreateView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
-        doctor_id = request.data.get("doctor")
-        available_time_id = request.data.get("available_time")
+        data = request.data.copy()
 
-        # التحقق من أن available_time يخص الطبيب المحدد
-        available_time = get_object_or_404(AvailableTime, id=available_time_id)
-        if available_time.doctor.id != int(doctor_id):
-            return Response(
-                {"error": "The selected available time does not belong to the chosen doctor."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # لو المستخدم مسجل ومفيش patient جاي من الفورم، نستخدم الحالي
+        if not data.get("patient"):
+            try:
+                patient = Patient.objects.get(user=request.user)
+                data["patient"] = patient.id
+            except Patient.DoesNotExist:
+                return Response(
+                    {"detail": "Patient profile not found for this user."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        serializer = AppointmentSerializer(data=request.data)
+        serializer = AppointmentSerializer(data=data)
+
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -227,14 +230,24 @@ class AppointmentDetailView(APIView):
 #  feedback
 class FeedbackListCreateView(APIView):
     def get(self, request):
+     
         doctor_id = request.GET.get("doctor_id")
+        ordering = request.GET.get("ordering", "-created_at")
+
+        allowed_ordering_fields = ["created_at", "-created_at", "rate", "-rate"]
+
+        if ordering not in allowed_ordering_fields:
+            ordering = "-created_at"  
 
         if doctor_id:
             feedbacks = Feedback.objects.filter(doctor_id=doctor_id)
         else:
             feedbacks = Feedback.objects.all()
 
+        feedbacks = feedbacks.order_by(ordering)
+
         serializer = FeedbackSerializer(feedbacks, many=True)
+
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
@@ -272,5 +285,8 @@ class FeedbackDetailView(APIView):
         feedback.delete()
         doctor.update_rating()
         return Response({"message": "Feedback deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+
+
 
 

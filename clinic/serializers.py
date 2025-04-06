@@ -92,62 +92,64 @@ class AvailableTimeSerializer(serializers.ModelSerializer):
 class AppointmentSerializer(serializers.ModelSerializer):
     date = serializers.DateField(source="available_time.date", read_only=True)
     time_range = serializers.SerializerMethodField(read_only=True)
-    patient_name = serializers.SerializerMethodField(read_only=True)
     doctor_name = serializers.SerializerMethodField(read_only=True)
-    phone_number = serializers.SerializerMethodField()
+    patient_name = serializers.CharField(
+        max_length=255, 
+         
+        allow_blank=True,
+         # تعيين القيمة الافتراضية لتكون فارغة في البداية
+    )
 
     class Meta:
         model = Appointment
         fields = (
             "id", "patient", "doctor", "available_time", "date", "time_range",
-            "patient_name", "doctor_name", "status","phone_number"
+            "patient_name", "doctor_name", "status", "phone_number"
         )
-        read_only_fields = ("id", "date", "time_range", "patient_name", "doctor_name")
+        read_only_fields = (
+            "id", "date", "time_range", "doctor_name", "status"
+        )
 
     def get_time_range(self, obj):
-       
         if obj.available_time:
             return f"{obj.available_time.start_time} - {obj.available_time.end_time}"
         return None
 
-    def get_patient_name(self, obj):
-
-        return obj.patient.user.name if obj.patient and obj.patient.user else None
-
     def get_doctor_name(self, obj):
-      
-        return obj.doctor.user.name if obj.doctor and obj.doctor.user else None
-    def get_phone_number(self, obj):
-   
-        if obj.patient and obj.patient.user and hasattr(obj.patient.user, "mobile_phone"):
-            return obj.patient.user.mobile_phone
+        return obj.doctor.user.username if obj.doctor and obj.doctor.user else None
 
     def validate(self, data):
-       
         available_time = data.get("available_time")
         doctor = data.get("doctor")
         patient = data.get("patient")
-        patient_phone = data.get("patient_phone")
+        phone_number = data.get("phone_number")
 
-        # التحقق من أن available_time ينتمي إلى الطبيب
+        # التحقق من أن available_time ينتمي للطبيب
         if available_time and doctor and available_time.doctor != doctor:
-            raise serializers.ValidationError(
-                {"available_time": "The selected available time does not belong to the chosen doctor."}
-            )
+            raise serializers.ValidationError({
+                "available_time": "The selected available time does not belong to the chosen doctor."
+            })
 
-        # التحقق من أن patient موجود
+        # التأكد من وجود مريض
         if not patient:
-            raise serializers.ValidationError(
-                {"patient": "Patient is required."}
-            )
+            raise serializers.ValidationError({
+                "patient": "Patient is required."
+            })
 
-        # التحقق من patient_phone إذا تم إرساله (اختياري لأنه blank=True)
-        if patient_phone and len(patient_phone) > 11:
-            raise serializers.ValidationError(
-                {"patient_phone": "Phone number must not exceed 11 characters."}
-            )
+        # التحقق من رقم الهاتف
+        if phone_number and (not phone_number.isdigit() or len(phone_number) > 11):
+            raise serializers.ValidationError({
+                "phone_number": "Enter a valid phone number with a maximum of 11 digits."
+            })
+
+        # تعيين الاسم الافتراضي للمريض بناءً على بيانات الـ User المرتبط
+        if not data.get("patient_name") and patient:
+            # جلب اسم المريض من الـ User المرتبط
+            data["patient_name"] = patient.user.username if patient.user else ""
 
         return data
+
+
 
 
 
