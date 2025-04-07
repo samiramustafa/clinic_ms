@@ -1,12 +1,18 @@
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
-from clinic.views import UserViewSet, PatientViewSet, DoctorViewSet
+from django.contrib import admin
+from clinic.views import AreaListView
 
-router = DefaultRouter()
-router.register(r'users', UserViewSet)
-router.register(r'patients', PatientViewSet)
-router.register(r'doctors', DoctorViewSet)
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('admin/', admin.site.urls),
+    
+    path('clinic/', include('clinic.urls')),
+    # path('api-auth/', include('rest_framework.urls'))
+    path('api/areas/', AreaListView.as_view(), name='area-list'),
 ]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL,
+                          document_root=settings.MEDIA_ROOT)
