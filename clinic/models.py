@@ -8,6 +8,8 @@ from django.core.validators import RegexValidator
 from datetime import date, timedelta
 from django.db.models import Avg
 from django.utils.translation import gettext_lazy as _  
+from django.utils.timezone import now
+from django.utils import timezone
 
 
 
@@ -25,15 +27,24 @@ class StatusChoices(models.TextChoices):
     ACCEPTED = "accepted", _("Accepted")
     REJECTED = "rejected", _("Rejected")
 
-class DaysChoices(models.TextChoices):
-    MONDAY = "Monday", _("Monday")
-    TUESDAY = "Tuesday", _("Tuesday")
-    WEDNESDAY = "Wednesday", _("Wednesday")
-    THURSDAY = "Thursday", _("Thursday")
-    FRIDAY = "Friday", _("Friday")
-    SATURDAY = "Saturday", _("Saturday")
-    SUNDAY = "Sunday", _("Sunday")
+# class DaysChoices(models.TextChoices):
+#     MONDAY = "Monday", _("Monday")
+#     TUESDAY = "Tuesday", _("Tuesday")
+#     WEDNESDAY = "Wednesday", _("Wednesday")
+#     THURSDAY = "Thursday", _("Thursday")
+#     FRIDAY = "Friday", _("Friday")
+#     SATURDAY = "Saturday", _("Saturday")
+#     SUNDAY = "Sunday", _("Sunday")
 
+
+class DaysChoices(models.TextChoices):
+    MONDAY = "Monday", "Monday"
+    TUESDAY = "Tuesday", "Tuesday"
+    WEDNESDAY = "Wednesday", "Wednesday"
+    THURSDAY = "Thursday", "Thursday"
+    FRIDAY = "Friday", "Friday"
+    SATURDAY = "Saturday", "Saturday"
+    SUNDAY = "Sunday", "Sunday"
 
 def validate_time_order(start_time, end_time):
     if start_time is None or end_time is None:
@@ -138,6 +149,8 @@ class Patient(models.Model):
     gender = models.CharField(max_length=10, choices=[('male', 'Male'), ('female', 'Female')], default='male')
 
     def clean(self):
+        if self.user.role != 'patient':
+            raise ValidationError("User role must be 'patient' to be a Patient.")
         # 1️⃣ منع أن يكون المريض طبيبًا أيضًا
         if hasattr(self.user, 'doctor_profile'):
             raise ValidationError("This user is already registered as a Doctor.")
@@ -166,6 +179,9 @@ class Doctor(models.Model):
     average_rating = models.FloatField(default=0.0)
 
     def clean(self):
+        if self.user.role != 'doctor':
+            raise ValidationError("User role must be 'doctor' to be a Doctor.")
+        
         if hasattr(self.user, 'patient_profile'):
             raise ValidationError("This user is already registered as a Patient.")
 
@@ -217,6 +233,7 @@ class Feedback(models.Model):
          status = "Active" if self.is_active else "Inactive"
          return f"Feedback from {self.patient.user.username} to Dr. {self.doctor.user.username} ({self.rate} ⭐) - Status: {status}"
 
+# ======================  Appointment Model  ========================
 
 class AvailableTime(models.Model):
     doctor = models.ForeignKey(
@@ -224,54 +241,58 @@ class AvailableTime(models.Model):
     )
     start_time = models.TimeField()
     end_time = models.TimeField()
-    day = models.CharField(max_length=20, choices=DaysChoices.choices, blank=True, null=True)
-    date = models.DateField(blank=True, null=True)
+    day = models.CharField(
+        max_length=20, 
+        choices=DaysChoices.choices, 
+        blank=True, 
+        null=True, 
+        editable=False  # Prevents manual editing in forms/admin
+    )
+    date = models.DateField(default=now)  # Required field now, no blank=True or null=True
 
     def clean(self):
+        # Validate that start_time is before end_time
         validate_time_order(self.start_time, self.end_time)
 
+        # Ensure doctor is provided
         if not self.doctor:
             raise ValidationError(_("Doctor field is required."))
 
+        # Ensure date is provided
+        if not self.date:
+            raise ValidationError(_("Date field is required."))
+
+        # Automatically set the day based on the date
         days_map = {
-            "Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3,
-            "Friday": 4, "Saturday": 5, "Sunday": 6
+            0: "Monday", 
+            1: "Tuesday", 
+            2: "Wednesday", 
+            3: "Thursday", 
+            4: "Friday", 
+            5: "Saturday", 
+            6: "Sunday"
         }
-
-        if self.day and self.date:
-     
-            selected_weekday = days_map.get(self.day)
-            if selected_weekday is not None and self.date.weekday() != selected_weekday:
-                raise ValidationError(_("The selected date does not match the chosen day."))
-
-        elif self.day and not self.date:
-    
-            today = date.today()
-            today_weekday = today.weekday()
-            selected_weekday = days_map[self.day]
-
-            days_difference = (selected_weekday - today_weekday) % 7
-            if days_difference == 0:
-                days_difference = 7 
-
-            self.date = today + timedelta(days=days_difference)
-
-        elif not self.day and not self.date:
-            raise ValidationError(_("You must specify either a day or a specific date."))
+        self.day = days_map[self.date.weekday()]
 
     def __str__(self):
-        return f"{self.doctor.user.username} - {self.day or self.date} ({self.start_time} - {self.end_time})"
+        return f"{self.doctor.user.username} - {self.day} ({self.date}) ({self.start_time} - {self.end_time})"
 
-
+def validate_time_order(start_time, end_time):
+    if start_time >= end_time:
+        raise ValidationError(_("Start time must be before end time."))
 
 class Appointment(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="appointments")
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name="appointments")
     available_time = models.ForeignKey(AvailableTime, on_delete=models.CASCADE, related_name="appointments")
     status = models.CharField(max_length=10, choices=StatusChoices.choices, default="pending")
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    patient_name = models.CharField(max_length=255, blank=True)
+
+   
    
     
 
 
     def __str__(self):
-        return f"{self.patient.user.name} - {self.available_time.doctor.user.name} ({self.available_time.date} {self.available_time.start_time} - {self.available_time.end_time})"
+        return f"{self.patient.user.username} - {self.available_time.doctor.user.username} ({self.available_time.date} {self.available_time.start_time} - {self.available_time.end_time})"
