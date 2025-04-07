@@ -16,6 +16,7 @@ def create_default_admin(sender, **kwargs):
                 username='admin',
                 email='admin@example.com',
                 password='admin123',
+                role='admin',
                 full_name='Admin User'  # تأكد من أن الاسم يحتوي على كلمتين
             )
 

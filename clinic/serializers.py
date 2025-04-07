@@ -68,12 +68,13 @@ class DoctorSerializer(serializers.ModelSerializer):
     # لاحظ: City و Area هما ForeignKeys في CustomUser، عشان نجيب الاسم محتاجين .name
     city = serializers.CharField(source='user.city.name', read_only=True, allow_null=True) # Handle cases where city might be null
     area = serializers.CharField(source='user.area.name', read_only=True, allow_null=True) # Handle cases where area might be null
+    user = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
     class Meta:
         model = Doctor
         # --- حدد الحقول اللي عايزها تظهر في الـ API response ---
         fields = [
             'id',           # Doctor ID
-            # 'user',       # شيل ده لو مش عايز الـ ID يظهر باسم 'user'
+            'user',       # شيل ده لو مش عايز الـ ID يظهر باسم 'user'
             # 'user_id',    # أو استخدم ده لو عايز الـ ID
             'name',         # اسم الطبيب (من CustomUser)
             'city',         # اسم المدينة (من CustomUser -> City)
