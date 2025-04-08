@@ -294,5 +294,10 @@ class Appointment(models.Model):
     
 
 
+    
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        self.doctor.update_rating() 
+    
     def __str__(self):
         return f"{self.patient.user.username} - {self.available_time.doctor.user.username} ({self.available_time.date} {self.available_time.start_time} - {self.available_time.end_time})"
