@@ -492,6 +492,12 @@ class AvailableTimeListCreateView(APIView):
 
     def get(self, request):
         doctor_id = request.query_params.get("doctor_id")
+        if not doctor_id or doctor_id == 'null':
+            return Response({'error': 'doctor_id is required'}, status=400)
+        try:
+            doctor_id = int(doctor_id)
+        except ValueError:
+            return Response({'error': 'doctor_id must be an integer'}, status=400)
         if doctor_id:
             available_times = AvailableTime.objects.filter(doctor_id=doctor_id)
         else:
@@ -542,12 +548,17 @@ class AvailableTimeDetailView(APIView):
 class AppointmentListCreateView(APIView):
     def get(self, request):
         doctor_id = request.GET.get("doctor_id")
-
+        patient_id = request.GET.get("patient_id")
+        
+        # Start with all appointments
+        appointments = Appointment.objects.all()
+        
+        # Apply filters conditionally
+        if patient_id:
+            appointments = appointments.filter(patient_id=patient_id)
         if doctor_id:
-            appointments = Appointment.objects.filter(doctor_id=doctor_id)
-        else:
-            appointments = Appointment.objects.all()
-
+            appointments = appointments.filter(doctor_id=doctor_id)
+        
         serializer = AppointmentSerializer(appointments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
