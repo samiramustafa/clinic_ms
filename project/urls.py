@@ -9,9 +9,10 @@ from clinic.views import AreaListView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('clinic/', include('clinic.urls')),
+    
+    path('api/', include('clinic.urls')),
     # path('api-auth/', include('rest_framework.urls'))
-    path('api/areas/', AreaListView.as_view(), name='area-list'),
+    # path('api/areas/', AreaListView.as_view(), name='area-list'),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL,
