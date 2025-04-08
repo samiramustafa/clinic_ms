@@ -1,0 +1,2 @@
+python3 manage.py load_cities
+python3 manage.py insert_doctors
