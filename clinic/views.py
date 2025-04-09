@@ -424,7 +424,6 @@ class FeedbackDetailView(APIView):
         feedback.delete()
         doctor.update_rating()
         return Response({"message": "Feedback deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-    
 class AdminTokenObtainPairView(TokenObtainPairView):
     """
     Login endpoint specifically for admin users.
