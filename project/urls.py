@@ -6,10 +6,15 @@ from django.contrib import admin
 from clinic.views import AreaListView
 
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+<<<<<<< HEAD
     
     path('api/', include('clinic.urls')),
+=======
+    path('clinic/', include('clinic.urls')),
+>>>>>>> 5003695a9733c2cca0145603836773b9db08941d
     # path('api-auth/', include('rest_framework.urls'))
     # path('api/areas/', AreaListView.as_view(), name='area-list'),
 ]

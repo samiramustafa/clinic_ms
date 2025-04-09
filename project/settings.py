@@ -1,6 +1,11 @@
 from pathlib import Path
 import os
 from datetime import timedelta
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 5003695a9733c2cca0145603836773b9db08941d
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -30,7 +35,6 @@ INSTALLED_APPS = [
     'clinic',
     # for react
     'corsheaders',
-    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -129,6 +133,7 @@ REST_FRAMEWORK = {
 }
 
 AUTHENTICATION_BACKENDS = [
+    # 'clinic.backends.EmailBackend', 
     'django.contrib.auth.backends.ModelBackend',
 ]
 
@@ -141,4 +146,5 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": True,
     "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
 }

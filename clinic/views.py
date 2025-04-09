@@ -18,7 +18,16 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .permissions import IsAdminRole # استيراد الصلاحية المخصصة
 # views.py
 
-# ... (باقي الاستيرادات والكلاسات الأخرى مثل DoctorViewSet, PatientViewSet etc.)
+
+
+from django.contrib.auth import authenticate, get_user_model
+from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+
+
+
 class UserViewSet(viewsets.ModelViewSet):
     """
     ViewSet للتعامل مع المستخدمين (CustomUser).
