@@ -1,6 +1,8 @@
 from pathlib import Path
 import os
 from datetime import timedelta
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -12,7 +14,7 @@ SECRET_KEY = 'django-insecure-x0^=+9a=cznbz-i0rx4dw2-j3my=^v^b$+6owpzv7js%@$ilmi
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
-AUTH_USER_MODEL = 'clinic.CustomUser'
+AUTH_USER_MODEL = 'clinic.CustomUser' 
 
 AUTH_USER_MODEL = 'clinic.CustomUser'
 
@@ -129,6 +131,7 @@ REST_FRAMEWORK = {
 }
 
 AUTHENTICATION_BACKENDS = [
+    # 'clinic.backends.EmailBackend', 
     'django.contrib.auth.backends.ModelBackend',
 ]
 
@@ -141,4 +144,5 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": True,
     "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
 }

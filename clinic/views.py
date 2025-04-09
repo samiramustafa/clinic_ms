@@ -358,6 +358,8 @@ class AppointmentDetailView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+  
 
     def delete(self, request, pk):
         appointment = get_object_or_404(Appointment, pk=pk)
@@ -424,6 +426,69 @@ class FeedbackDetailView(APIView):
         feedback.delete()
         doctor.update_rating()
         return Response({"message": "Feedback deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+# class FeedbackListCreateView(APIView):
+#     # --- (دالة post كما هي لديك غالبًا) ---
+#     def post(self, request):
+#         serializer = FeedbackSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             # افترض أن update_rating يتم في signal أو save method الآن
+#             # serializer.instance.doctor.update_rating()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     # --- 👇 تعديل دالة get ---
+#     def get(self, request):
+#         doctor_id = request.GET.get("doctor_id")
+#         ordering = request.GET.get("ordering", "-created_at")
+#         allowed_ordering_fields = ["created_at", "-created_at", "rate", "-rate"]
+
+#         if ordering not in allowed_ordering_fields:
+#             ordering = "-created_at"
+
+#         # بناء الـ queryset الأساسي
+#         queryset = Feedback.objects.select_related('patient__user', 'doctor__user') # تحسين الأداء
+
+#         # تطبيق الفلترة
+#         if doctor_id:
+#             queryset = queryset.filter(doctor_id=doctor_id)
+#         # else: لا حاجة لـ else هنا، إذا لم يكن هناك doctor_id نأخذ الكل
+
+#         # تطبيق الترتيب
+#         queryset = queryset.order_by(ordering)
+
+#         # --- 👇 إضافة الـ Serialization والـ Response ---
+#         serializer = FeedbackSerializer(queryset, many=True) # many=True لأنها قائمة
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+#         # --- ---------------------------------------- ---
+
+# # --- FeedbackDetailView (لا يوجد خطأ واضح هنا) ---
+# class FeedbackDetailView(APIView):
+#     def get(self, request, pk):
+#         feedback = get_object_or_404(Feedback, pk=pk)
+#         serializer = FeedbackSerializer(feedback)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+
+#     def put(self, request, pk):
+#         feedback = get_object_or_404(Feedback, pk=pk)
+#         # استخدم partial=True للسماح بتحديث جزئي (PATCH) أيضًا إذا أردت
+#         serializer = FeedbackSerializer(feedback, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             serializer.save()
+#             # افترض أن تحديث التقييم يتم عبر signal أو save method
+#             # serializer.instance.doctor.update_rating()
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def delete(self, request, pk):
+#         feedback = get_object_or_404(Feedback, pk=pk)
+#         doctor = feedback.doctor # احصل على الطبيب قبل الحذف
+#         feedback.delete()
+#         # افترض أن تحديث التقييم يتم عبر signal أو save method
+#         # if doctor:
+#         #     doctor.update_rating()
+#         return Response({"message": "Feedback deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
 class AdminTokenObtainPairView(TokenObtainPairView):
     """
     Login endpoint specifically for admin users.
