@@ -112,28 +112,28 @@ class CustomUser(AbstractUser):
     groups = models.ManyToManyField(Group, related_name="custom_user_groups", blank=True)
     user_permissions = models.ManyToManyField(Permission, related_name="custom_user_permissions", blank=True)
 
-    # def clean(self):
-    #     """
-    #     تأكد من صحة البيانات قبل الحفظ.
-    #     """
-    #     # تأكد من أن `full_name` يحتوي على أكثر من كلمتين
-    #     if len(self.full_name.split()) < 2:
-    #         raise ValidationError({"full_name": "Full name must contain at least two words."})
-
-    #     # تأكد من أن الاسم الأول والأخير ليس فارغًا إذا تم إدخالهما
-    #     if self.first_name and len(self.first_name.strip()) == 0:
-    #         raise ValidationError({"first_name": "First name cannot be just spaces."})
-
-    #     if self.last_name and len(self.last_name.strip()) == 0:
-    #         raise ValidationError({"last_name": "Last name cannot be just spaces."})
-
-
-    def save(self, *args, **kwargs):
+    def validate(self):
         """
-        استدعاء `clean()` قبل الحفظ لضمان صحة البيانات.
+        تأكد من صحة البيانات المدخلة.
         """
-        self.validate()
-        super().save(*args, **kwargs)
+        # تحقق من أن الاسم الكامل يحتوي على أكثر من كلمتين
+        if len(self.full_name.split()) < 2:
+            raise ValidationError({"full_name": "Full name must contain at least two words."})
+
+        # تحقق من أن الاسم الأول والأخير ليس فارغًا إذا تم إدخالهما
+        if self.first_name and len(self.first_name.strip()) == 0:
+            raise ValidationError({"first_name": "First name cannot be just spaces."})
+
+        if self.last_name and len(self.last_name.strip()) == 0:
+            raise ValidationError({"last_name": "Last name cannot be just spaces."})
+
+
+    # def save(self, *args, **kwargs):
+    #     """
+    #     استدعاء `clean()` قبل الحفظ لضمان صحة البيانات.
+    #     """
+    #     self.validate()
+    #     super().save(*args, **kwargs)
 
     def __str__(self):
         return self.username

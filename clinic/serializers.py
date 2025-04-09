@@ -151,7 +151,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             "patient_name", "doctor_name", "status", "phone_number"
         )
         read_only_fields = (
-            "id", "date", "time_range", "doctor_name", "status"
+            "id", "date", "time_range", "doctor_name"
         )
 
     def get_time_range(self, obj):
