@@ -14,7 +14,7 @@ SECRET_KEY = 'django-insecure-x0^=+9a=cznbz-i0rx4dw2-j3my=^v^b$+6owpzv7js%@$ilmi
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
-AUTH_USER_MODEL = 'clinic.CustomUser'
+AUTH_USER_MODEL = 'clinic.CustomUser' 
 
 AUTH_USER_MODEL = 'clinic.CustomUser'
 
@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'clinic',
     # for react
     'corsheaders',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
