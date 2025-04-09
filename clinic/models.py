@@ -117,13 +117,7 @@ class CustomUser(AbstractUser):
             raise ValidationError({"last_name": "Last name cannot be just spaces."})
 
 
-    # def save(self, *args, **kwargs):
-    #     """
-    #     استدعاء `clean()` قبل الحفظ لضمان صحة البيانات.
-    #     """
-    #     self.validate()
-    #     super().save(*args, **kwargs)
-
+  
     def __str__(self):
         return self.username
 
@@ -274,4 +268,77 @@ class Appointment(models.Model):
 
 
     def __str__(self):
-        return f"{self.patient.user.name} - {self.available_time.doctor.user.name} ({self.available_time.date} {self.available_time.start_time} - {self.available_time.end_time})"
+        return f"{self.patient.user.username} - {self.available_time.doctor.user.username} ({self.available_time.date} {self.available_time.start_time} - {self.available_time.end_time})"
+from django.utils import timezone
+from django.db import models
+import re
+from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import RegexValidator
+from datetime import date, timedelta
+from django.db.models import Avg
+from django.utils.translation import gettext_lazy as _  
+
+# ... (keep all your existing choices and validators) ...
+
+class NewsletterSubscriber(models.Model):
+    """
+    Model for storing newsletter subscribers with fake email sending capability
+    """
+    email = models.EmailField(unique=True)
+    subscribed_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+    last_email_sent = models.DateTimeField(null=True, blank=True)
+    email_count = models.PositiveIntegerField(default=0)
+
+    def send_welcome_email(self):
+        """
+        Simulates sending a welcome email without actually sending it
+        """
+        # Print to console for development purposes
+        print(f"\n=== Simulating welcome email to {self.email} ===\n")
+        print(f"From: clinic@example.com")
+        print(f"To: {self.email}")
+        print(f"Subject: Welcome to Our Clinic Newsletter!")
+        print(f"\nBody:")
+        print(f"Dear Subscriber,")
+        print(f"\nThank you for joining our clinic newsletter!")
+        print(f"You'll receive updates on health tips, clinic news, and special offers.")
+        print(f"\nWe're committed to your health and wellbeing.")
+        print(f"\nBest regards,")
+        print(f"The Clinic Team\n")
+        print(f"=== End of simulated email ===\n")
+
+        # Update tracking fields
+        self.last_email_sent = timezone.now()
+        self.email_count += 1
+        self.save()
+
+    def clean(self):
+        """
+        Basic email validation
+        """
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", self.email):
+            raise ValidationError("Please enter a valid email address.")
+
+    def __str__(self):
+        return f"{self.email} ({'Active' if self.is_active else 'Inactive'})"
+
+# ... (keep all your existing models) ...
+
+# Add this at the end of your models.py
+class NewsletterLog(models.Model):
+    """
+    Optional model to track simulated email sends
+    """
+    subscriber = models.ForeignKey(NewsletterSubscriber, on_delete=models.CASCADE, related_name='logs')
+    sent_at = models.DateTimeField(auto_now_add=True)
+    email_type = models.CharField(max_length=50, default='welcome')
+    simulated_content = models.TextField()
+
+    def __str__(self):
+        return f"Log for {self.subscriber.email} at {self.sent_at}"
+
+    class Meta:
+        ordering = ['-sent_at']

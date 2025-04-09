@@ -42,10 +42,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework.authtoken',
-    'clinic',
+    'clinic.apps.ClinicConfig',  # Instead of just 'clinic'
     # for react
     'corsheaders',
     'django_extensions',
+    'clinic', 
+   
+    
 ]
 
 MIDDLEWARE = [
@@ -169,3 +172,18 @@ SIMPLE_JWT = {
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
 }
+
+# Email Simulation Settings (for fake emails)
+SIMULATED_EMAILS = {
+    'ENABLED': True,  # Set to False if you ever implement real emails
+    'CONSOLE_OUTPUT': True,  # Prints emails to console
+    'LOG_TO_DB': True,  # Requires NewsletterLog model
+}
+
+# Newsletter Settings
+NEWSLETTER_CONFIG = {
+    'WELCOME_EMAIL_DELAY': 1.5,  # Seconds to simulate email sending
+    'MAX_EMAILS_PER_DAY': 5,  # For abuse prevention
+}
+
+
