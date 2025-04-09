@@ -1,11 +1,8 @@
 from pathlib import Path
 import os
 from datetime import timedelta
-<<<<<<< HEAD
-=======
 
 
->>>>>>> 5003695a9733c2cca0145603836773b9db08941d
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
