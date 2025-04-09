@@ -381,7 +381,26 @@ class FeedbackListCreateView(APIView):
         if doctor_id:
             feedbacks = Feedback.objects.filter(doctor_id=doctor_id)
         else:
-            feedbacks = Feedback.obj
+            feedbacks = Feedback.objects.all()
+
+        feedbacks = feedbacks.order_by(ordering)
+
+        serializer = FeedbackSerializer(feedbacks, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        serializer = FeedbackSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+            serializer.instance.doctor.update_rating()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
 class FeedbackDetailView(APIView):
     def get(self, request, pk):
         feedback = get_object_or_404(Feedback, pk=pk)
@@ -405,7 +424,6 @@ class FeedbackDetailView(APIView):
         feedback.delete()
         doctor.update_rating()
         return Response({"message": "Feedback deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-
 class AdminTokenObtainPairView(TokenObtainPairView):
     """
     Login endpoint specifically for admin users.
