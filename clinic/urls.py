@@ -1,15 +1,11 @@
 # In clinic/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import (
-    UserViewSet, PatientViewSet, DoctorViewSet, CityViewSet, AreaListView,
-    AdminTokenObtainPairView, AdminFeedbackListView, AdminFeedbackDetailView,
-    AvailableTimeListCreateView, AvailableTimeDetailView,
-    AppointmentListCreateView, AppointmentDetailView,
-    FeedbackListCreateView, FeedbackDetailView,
-    # لا حاجة لاستيراد login_view إذا لم تكن مستخدمة
-)
+# from .views import CustomTokenObtainPairView
+# from rest_framework_simplejwt.views import TokenRefreshView
+from .views import AppointmentDetailView, AppointmentListCreateView, AvailableTimeDetailView, AvailableTimeListCreateView, DoctorViewSet, FeedbackDetailView, FeedbackListCreateView, PatientViewSet, UserViewSet
+
+
 
 # --- تعريف الـ Router ---
 router = DefaultRouter()
@@ -21,8 +17,6 @@ router.register(r'cities', CityViewSet, basename='city')
 
 # --- تعريف الـ urlpatterns ---
 urlpatterns = [
-    # --- 1. تضمين مسارات الـ router أولاً (ستكون تحت /api/ بسبب الملف الرئيسي) ---
-    # مثال: /api/users/, /api/users/me/, /api/doctors/, /api/patients/, /api/cities/
     path('', include(router.urls)),
 
     # --- 2. مسارات API Tokens (تحت /api/) ---
